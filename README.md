@@ -11,14 +11,24 @@ Full-stack clinic patient directory: **Django** API, **React + TypeScript** UI, 
 
 ## Run with Docker
 
-Prerequisites: Docker with Compose v2.
+**Prerequisites:** Docker with Compose v2.
+
+**Environment:** Copy **`.env.example`** to **`.env`** to override secrets or DB names. Compose reads a root **`.env`** for variable substitution (e.g. `POSTGRES_PASSWORD`).
 
 ```bash
 docker compose up --build
+# or: make up
 ```
 
 - **App (UI + proxied API):** http://localhost:8080  
-- **Demo login:** `demo` / `demo12345` (seeded on API startup)
+- **Demo login:** `demo` / `demo12345` (seeded on API startup when `SEED_DEMO=1`)
+
+The `api` container runs **`migrate`** on start, then optional **`seed_demo`** (see **`backend/docker-entrypoint.sh`**). To run migrations alone without bringing the stack up:
+
+```bash
+make migrate
+# same as: docker compose run --rm api python manage.py migrate
+```
 
 The `web` service serves the SPA and proxies `/api/*` to the Django container so the browser is **same-origin** with the API (session cookies + CSRF; no CORS layer).
 
