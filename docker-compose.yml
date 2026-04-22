@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: patient_mgmt
+      POSTGRES_USER: patient_mgmt
+      POSTGRES_PASSWORD: patient_mgmt
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U patient_mgmt -d patient_mgmt"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-docker-dev-secret-key}
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: api,localhost,127.0.0.1
+      SEED_DEMO: "1"
+      POSTGRES_DB: patient_mgmt
+      POSTGRES_USER: patient_mgmt
+      POSTGRES_PASSWORD: patient_mgmt
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_ROOT: /api
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

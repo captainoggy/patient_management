@@ -1,0 +1,48 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# After deploy, set DJANGO_CSRF_TRUSTED_ORIGINS to your Vercel URL(s), e.g.:
+#   https://your-app.vercel.app
+databases:
+  - name: patient-mgmt-db
+    databaseName: patient_mgmt
+    user: patient_mgmt
+
+services:
+  - type: web
+    name: patient-mgmt-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_HTTPS_DEPLOYMENT
+        value: "true"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: patient-mgmt-api.onrender.com
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: SEED_DEMO
+        value: "0"
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: patient-mgmt-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: patient-mgmt-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: patient-mgmt-db
+          property: password
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: patient-mgmt-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: patient-mgmt-db
+          property: port
