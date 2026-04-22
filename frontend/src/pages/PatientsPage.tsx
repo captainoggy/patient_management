@@ -1,23 +1,24 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 
+import { PatientFormModal, type EditorState } from "../components/patients/PatientFormModal";
+import { PatientListPagination } from "../components/patients/PatientListPagination";
+import { PatientTable } from "../components/patients/PatientTable";
 import type { ClinicSummary } from "../api/auth";
 import { logout as logoutApi } from "../api/auth";
 import { ApiError } from "../api/http";
 import {
   createPatient,
   deletePatient,
-  listPatients,
   type Patient,
   type PatientPayload,
   updatePatient,
 } from "../api/patients";
+import { usePatientsList } from "../hooks/usePatientsList";
 
 type Props = {
   clinic: ClinicSummary;
   onLogout: () => void;
 };
-
-type EditorMode = "create" | "edit";
 
 const emptyPayload: PatientPayload = {
   first_name: "",
@@ -28,36 +29,22 @@ const emptyPayload: PatientPayload = {
 };
 
 export function PatientsPage({ clinic, onLogout }: Props) {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [listCount, setListCount] = useState(0);
-  const [listPage, setListPage] = useState(1);
-  const [listNext, setListNext] = useState<string | null>(null);
-  const [listPrevious, setListPrevious] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editor, setEditor] = useState<{ mode: EditorMode; patient?: Patient } | null>(null);
+  const {
+    patients,
+    listCount,
+    page: listPage,
+    setPage: setListPage,
+    listNext,
+    listPrevious,
+    loading,
+    error,
+    setError,
+    reload,
+  } = usePatientsList(clinic.id);
+
+  const [editor, setEditor] = useState<EditorState | null>(null);
   const [form, setForm] = useState<PatientPayload>(emptyPayload);
   const [saving, setSaving] = useState(false);
-
-  const load = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const data = await listPatients(listPage, 20, clinic.id);
-      setPatients(data.results);
-      setListCount(data.count);
-      setListNext(data.next);
-      setListPrevious(data.previous);
-    } catch {
-      setError("Could not load patients.");
-    } finally {
-      setLoading(false);
-    }
-  }, [clinic.id, listPage]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   function openCreate() {
     setForm(emptyPayload);
@@ -72,24 +59,24 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       email: p.email,
       phone: p.phone,
     });
-    setEditor({ mode: "edit", patient: p });
+    setEditor({ mode: "edit", patientId: p.id });
   }
 
   function closeEditor() {
     setEditor(null);
   }
 
-  async function onDelete(p: Patient) {
+  async function handleDelete(p: Patient) {
     if (!window.confirm(`Delete ${p.first_name} ${p.last_name}?`)) return;
     try {
       await deletePatient(p.id);
-      await load();
+      await reload();
     } catch {
       setError("Delete failed.");
     }
   }
 
-  async function onSave(e: FormEvent) {
+  async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (!editor) return;
     setSaving(true);
@@ -101,11 +88,11 @@ export function PatientsPage({ clinic, onLogout }: Props) {
     try {
       if (editor.mode === "create") {
         await createPatient(payload);
-      } else if (editor.patient) {
-        await updatePatient(editor.patient.id, payload);
+      } else {
+        await updatePatient(editor.patientId, payload);
       }
       closeEditor();
-      await load();
+      await reload();
     } catch (err) {
       setError(err instanceof ApiError ? "Save failed. Check required fields." : "Save failed.");
     } finally {
@@ -150,138 +137,26 @@ export function PatientsPage({ clinic, onLogout }: Props) {
         ) : patients.length === 0 ? (
           <p className="muted">No rows on this page. Try another page.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>DOB</th>
-                  <th>Appts</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {patients.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      {p.last_name}, {p.first_name}
-                    </td>
-                    <td>{p.email || "—"}</td>
-                    <td>{p.phone || "—"}</td>
-                    <td>{p.date_of_birth || "—"}</td>
-                    <td>{p.appointment_count}</td>
-                    <td>
-                      <div className="row" style={{ justifyContent: "flex-end" }}>
-                        <button type="button" className="btn btn-ghost" onClick={() => openEdit(p)}>
-                          Edit
-                        </button>
-                        <button type="button" className="btn btn-danger" onClick={() => void onDelete(p)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PatientTable patients={patients} onEdit={openEdit} onDelete={handleDelete} />
         )}
-        {!loading && listCount > 0 ? (
-          <div className="row-between" style={{ marginTop: "1rem" }}>
-            <p className="muted" style={{ margin: 0 }}>
-              {listCount} patient{listCount === 1 ? "" : "s"} total · page {listPage}
-            </p>
-            <div className="row">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={!listPrevious}
-                onClick={() => setListPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={!listNext}
-                onClick={() => setListPage((p) => p + 1)}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        ) : null}
+        <PatientListPagination
+          listCount={listCount}
+          page={listPage}
+          hasPrevious={!!listPrevious}
+          hasNext={!!listNext}
+          onPrevious={() => setListPage((p) => Math.max(1, p - 1))}
+          onNext={() => setListPage((p) => p + 1)}
+        />
       </section>
 
-      {editor ? (
-        <div className="modal-backdrop" role="presentation" onClick={closeEditor}>
-          <div
-            className="modal stack"
-            role="dialog"
-            aria-modal="true"
-            onClick={(ev) => ev.stopPropagation()}
-          >
-            <h2 style={{ margin: 0 }}>
-              {editor.mode === "create" ? "New patient" : "Edit patient"}
-            </h2>
-            <form className="stack" onSubmit={(e) => void onSave(e)}>
-              <div className="row" style={{ gap: "1rem" }}>
-                <label className="field">
-                  First name
-                  <input
-                    value={form.first_name}
-                    onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
-                    required
-                  />
-                </label>
-                <label className="field">
-                  Last name
-                  <input
-                    value={form.last_name}
-                    onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
-                    required
-                  />
-                </label>
-              </div>
-              <label className="field">
-                Date of birth
-                <input
-                  type="date"
-                  value={form.date_of_birth ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, date_of_birth: e.target.value }))}
-                />
-              </label>
-              <div className="row" style={{ gap: "1rem" }}>
-                <label className="field">
-                  Email
-                  <input
-                    type="email"
-                    value={form.email ?? ""}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  />
-                </label>
-                <label className="field">
-                  Phone
-                  <input
-                    value={form.phone ?? ""}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  />
-                </label>
-              </div>
-              <div className="row" style={{ justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-ghost" onClick={closeEditor}>
-                  Cancel
-                </button>
-                <button className="btn btn-primary" type="submit" disabled={saving}>
-                  {saving ? "Saving…" : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+      <PatientFormModal
+        editor={editor}
+        form={form}
+        setForm={setForm}
+        saving={saving}
+        onClose={closeEditor}
+        onSubmit={(e) => void handleSave(e)}
+      />
     </div>
   );
 }
