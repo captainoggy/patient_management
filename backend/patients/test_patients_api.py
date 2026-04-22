@@ -25,6 +25,24 @@ class PatientApiTests(TestCase):
             last_name="Other",
         )
         self.client = APIClient(enforce_csrf_checks=False)
+        self.other_patient = Patient.objects.get(
+            clinic=self.other_clinic, last_name="Other"
+        )
+
+    def test_anonymous_cannot_access_patients(self):
+        r = self.client.get("/api/v1/patients/")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_without_profile_cannot_access_patients(self):
+        lone = User.objects.create_user(username="noprofile", password="pass12345")
+        self.client.force_login(lone)
+        r = self.client.get("/api/v1/patients/")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cannot_retrieve_other_clinic_patient(self):
+        self.client.force_login(self.user)
+        r = self.client.get(f"/api/v1/patients/{self.other_patient.id}/")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_list_scoped_to_clinic(self):
         self.client.force_login(self.user)

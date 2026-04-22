@@ -121,6 +121,12 @@ Workflow **`.github/workflows/ci.yml`** runs on **`pull_request`** and on **`wor
 - **Backend:** `pip install` → `manage.py check` → `makemigrations --check --dry-run` → `manage.py test patients` (SQLite via `DJANGO_DB_ENGINE=sqlite`).
 - **Frontend:** `npm ci` → `npm run lint` → `npm run typecheck` → `npm run build` (`VITE_API_ROOT=/api`).
 
+## Architecture (brief)
+
+- **Tenancy:** Patients are always tied to a `clinic_id`; each request resolves exactly one clinic (`resolve_clinic_id` + permissions). The API does not expose a global patient list; superusers must pass explicit clinic scope unless `DJANGO_FIXED_CLINIC_ID` is set.
+- **API shape:** Django REST Framework viewsets and serializers; session cookies for auth; mutating calls require CSRF. The SPA talks to `/api` on the same host (Vite proxy, Compose `web` service, or Vercel rewrite) so credentials work without a separate CORS policy.
+- **Docker Compose:** Postgres (`db`) starts first with a healthcheck; `api` runs migrations then serves the app; `web` serves the built React app and reverse-proxies `/api` to `api:8000`.
+
 ## Domain model
 
 - **Clinic** → many **Patients**; each patient belongs to one clinic.  
