@@ -20,8 +20,25 @@ export type PatientPayload = {
   phone?: string;
 };
 
-export async function listPatients(): Promise<Patient[]> {
-  return apiFetch<Patient[]>("/v1/patients/");
+export type PaginatedPatients = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Patient[];
+};
+
+export async function listPatients(
+  page = 1,
+  pageSize = 20,
+  clinicId?: number,
+): Promise<PaginatedPatients> {
+  const q = new URLSearchParams();
+  q.set("page", String(page));
+  q.set("page_size", String(pageSize));
+  if (clinicId != null) {
+    q.set("clinic_id", String(clinicId));
+  }
+  return apiFetch<PaginatedPatients>(`/v1/patients/?${q.toString()}`);
 }
 
 export async function createPatient(body: PatientPayload): Promise<Patient> {

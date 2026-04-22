@@ -98,6 +98,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+_fixed_clinic = os.environ.get("DJANGO_FIXED_CLINIC_ID", "").strip()
+FIXED_CLINIC_ID = int(_fixed_clinic) if _fixed_clinic.isdigit() else None
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
@@ -105,6 +108,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_PARSER_CLASSES": ("rest_framework.parsers.JSONParser",),
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.StandardPageNumberPagination",
 }
 
 # Browser UI is same-origin with the API (Vite proxy in dev, nginx in Docker).

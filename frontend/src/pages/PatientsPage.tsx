@@ -29,6 +29,10 @@ const emptyPayload: PatientPayload = {
 
 export function PatientsPage({ clinic, onLogout }: Props) {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [listCount, setListCount] = useState(0);
+  const [listPage, setListPage] = useState(1);
+  const [listNext, setListNext] = useState<string | null>(null);
+  const [listPrevious, setListPrevious] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<{ mode: EditorMode; patient?: Patient } | null>(null);
@@ -39,14 +43,17 @@ export function PatientsPage({ clinic, onLogout }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const rows = await listPatients();
-      setPatients(rows);
+      const data = await listPatients(listPage, 20, clinic.id);
+      setPatients(data.results);
+      setListCount(data.count);
+      setListNext(data.next);
+      setListPrevious(data.previous);
     } catch {
       setError("Could not load patients.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clinic.id, listPage]);
 
   useEffect(() => {
     void load();
@@ -138,8 +145,10 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       <section className="panel">
         {loading ? (
           <p className="muted">Loading…</p>
-        ) : patients.length === 0 ? (
+        ) : listCount === 0 ? (
           <p className="muted">No patients yet. Add one to get started.</p>
+        ) : patients.length === 0 ? (
+          <p className="muted">No rows on this page. Try another page.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table>
@@ -179,6 +188,31 @@ export function PatientsPage({ clinic, onLogout }: Props) {
             </table>
           </div>
         )}
+        {!loading && listCount > 0 ? (
+          <div className="row-between" style={{ marginTop: "1rem" }}>
+            <p className="muted" style={{ margin: 0 }}>
+              {listCount} patient{listCount === 1 ? "" : "s"} total · page {listPage}
+            </p>
+            <div className="row">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={!listPrevious}
+                onClick={() => setListPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={!listNext}
+                onClick={() => setListPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {editor ? (

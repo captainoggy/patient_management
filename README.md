@@ -48,12 +48,22 @@ Vite proxies `/api` to `http://127.0.0.1:8000`, so the UI stays same-origin with
 | GET | `/api/v1/auth/session/` | Session check; sets CSRF cookie. Returns `authenticated` and `clinic` when logged in. |
 | POST | `/api/v1/auth/login/` | JSON `username`, `password`; establishes session; returns `clinic`. Requires CSRF header after session GET. |
 | POST | `/api/v1/auth/logout/` | Ends session (authenticated). |
-| GET | `/api/v1/patients/` | List patients for the authenticated user’s clinic. |
-| POST | `/api/v1/patients/` | Create patient (clinic inferred from user). |
-| GET/PATCH/PUT/DELETE | `/api/v1/patients/{id}/` | Retrieve, update, delete (scoped to clinic). |
+| GET | `/api/v1/patients/` | Paginated list (`count`, `next`, `previous`, `results`). See **Clinic scoping** below. Query: `page`, `page_size` (max 100). |
+| POST | `/api/v1/patients/` | Create patient in the resolved clinic (same scoping rules). |
+| GET/PATCH/PUT/DELETE | `/api/v1/patients/{id}/` | Retrieve, update, delete (object must belong to resolved clinic). |
 | GET | `/api/v1/health/` | Liveness JSON for the API process (useful in Compose / load balancers). |
 
 Authenticated requests use the **session cookie**; mutating requests send **`X-CSRFToken`** (see `GET /auth/session/`).
+
+### Clinic scoping for `/api/v1/patients/`
+
+Every patient operation runs in exactly **one clinic id**, resolved in this order:
+
+1. **`DJANGO_FIXED_CLINIC_ID`** (optional env) — Single-clinic deployments. The id must exist in the database. Staff must have a `UserProfile` for that clinic; otherwise `403`. Superusers are scoped to this id without passing headers. If the id does not exist, the API returns `400` (misconfiguration).
+2. **`X-Clinic-Id`** header **or** **`clinic_id`** query parameter — If either is present, that id is used **after validation**: non-superusers may only use their own `UserProfile.clinic_id`; a mismatch is `403`. Superusers may use any existing clinic id; unknown id is `400`.
+3. **Default** — If no fixed id and no header/query: **staff** use `UserProfile.clinic`. **Superusers** must pass `X-Clinic-Id` or `clinic_id` (otherwise `400`), so clinic scope is always explicit for admins.
+
+The React app passes **`clinic_id`** on list requests to match the logged-in user’s clinic from session payload (redundant but clear for API clients and tests).
 
 ## CI
 
