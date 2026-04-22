@@ -33,8 +33,12 @@ export function PatientsPage({ clinic, onLogout }: Props) {
     patients,
     listCount,
     page: listPage,
+    pageSize,
     goToPage,
+    setPageSize,
     totalPages,
+    rangeStart,
+    rangeEnd,
     loading,
     error,
     setError,
@@ -167,7 +171,11 @@ export function PatientsPage({ clinic, onLogout }: Props) {
           listCount={listCount}
           page={listPage}
           totalPages={totalPages}
+          pageSize={pageSize}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
           onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
         />
       </section>
 
