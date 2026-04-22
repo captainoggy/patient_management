@@ -52,11 +52,7 @@ export function PatientTable({ patients, onEdit, onDelete }: Props) {
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => onEdit(p)}>
                   Edit
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-danger-ghost btn-sm"
-                  onClick={() => void onDelete(p)}
-                >
+                <button type="button" className="btn btn-danger-ghost btn-sm" onClick={() => onDelete(p)}>
                   Delete
                 </button>
               </div>

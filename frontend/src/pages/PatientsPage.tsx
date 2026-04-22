@@ -1,5 +1,6 @@
-import { FormEvent, useState, type SetStateAction } from "react";
+import { FormEvent, useEffect, useState, type SetStateAction } from "react";
 
+import { DeletePatientModal } from "../components/patients/DeletePatientModal";
 import { PatientFormModal, type EditorState } from "../components/patients/PatientFormModal";
 import { PatientListPagination } from "../components/patients/PatientListPagination";
 import { PatientTable } from "../components/patients/PatientTable";
@@ -50,6 +51,15 @@ export function PatientsPage({ clinic, onLogout }: Props) {
   const [form, setForm] = useState<PatientPayload>(emptyPayload);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!notice) return;
+    const id = window.setTimeout(() => setNotice(null), 4500);
+    return () => window.clearTimeout(id);
+  }, [notice]);
 
   function openCreate() {
     setFormError(null);
@@ -82,13 +92,31 @@ export function PatientsPage({ clinic, onLogout }: Props) {
     setForm(next);
   }
 
-  async function handleDelete(p: Patient) {
-    if (!window.confirm(`Remove ${p.first_name} ${p.last_name} from the directory?`)) return;
+  function requestDelete(p: Patient) {
+    setError(null);
+    setNotice(null);
+    setDeleteTarget(p);
+  }
+
+  function cancelDelete() {
+    if (!deleteBusy) setDeleteTarget(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
+    setError(null);
+    const label = `${deleteTarget.first_name} ${deleteTarget.last_name}`;
+    const id = deleteTarget.id;
     try {
-      await deletePatient(p.id);
+      await deletePatient(id);
+      setDeleteTarget(null);
+      setNotice(`${label} was removed successfully.`);
       await reload();
     } catch {
       setError("Could not delete this patient. Try again.");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -147,6 +175,12 @@ export function PatientsPage({ clinic, onLogout }: Props) {
         </div>
       </header>
 
+      {notice ? (
+        <div className="alert alert-success" role="status">
+          {notice}
+        </div>
+      ) : null}
+
       {error ? (
         <div className="alert alert-error" role="alert">
           <span>{error}</span>
@@ -182,7 +216,7 @@ export function PatientsPage({ clinic, onLogout }: Props) {
             </div>
           ) : (
             <div className="table-wrap">
-              <PatientTable patients={patients} onEdit={openEdit} onDelete={handleDelete} />
+              <PatientTable patients={patients} onEdit={openEdit} onDelete={requestDelete} />
             </div>
           )}
         </div>
@@ -206,6 +240,13 @@ export function PatientsPage({ clinic, onLogout }: Props) {
         formError={formError}
         onClose={closeEditor}
         onSubmit={(e) => void handleSave(e)}
+      />
+
+      <DeletePatientModal
+        patient={deleteTarget}
+        busy={deleteBusy}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
       />
     </div>
   );

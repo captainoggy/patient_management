@@ -132,6 +132,12 @@ textarea {
   color: #991b1b;
 }
 
+.alert-success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
