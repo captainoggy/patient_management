@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { useEffect } from "react";
 
 import type { PatientPayload } from "../../api/patients";
 
@@ -14,19 +15,38 @@ type Props = {
 };
 
 export function PatientFormModal({ editor, form, setForm, saving, onClose, onSubmit }: Props) {
+  useEffect(() => {
+    if (!editor) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editor, onClose]);
+
   if (!editor) return null;
+
+  const isCreate = editor.mode === "create";
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
         className="modal stack"
         role="dialog"
+        aria-labelledby="patient-modal-title"
         aria-modal="true"
         onClick={(ev) => ev.stopPropagation()}
       >
-        <h2 style={{ margin: 0 }}>
-          {editor.mode === "create" ? "New patient" : "Edit patient"}
-        </h2>
+        <div className="modal-header">
+          <h2 id="patient-modal-title" className="modal-title">
+            {isCreate ? "Add patient" : "Edit patient"}
+          </h2>
+          <p className="modal-desc">
+            {isCreate
+              ? "Required fields are marked. Everything else can be added later."
+              : "Update details and save. Changes apply immediately."}
+          </p>
+        </div>
         <form className="stack" onSubmit={(e) => void onSubmit(e)}>
           <div className="row" style={{ gap: "1rem" }}>
             <label className="field">
@@ -35,6 +55,7 @@ export function PatientFormModal({ editor, form, setForm, saving, onClose, onSub
                 value={form.first_name}
                 onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
                 required
+                autoFocus
               />
             </label>
             <label className="field">
@@ -66,17 +87,18 @@ export function PatientFormModal({ editor, form, setForm, saving, onClose, onSub
             <label className="field">
               Phone
               <input
+                inputMode="tel"
                 value={form.phone ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               />
             </label>
           </div>
-          <div className="row" style={{ justifyContent: "flex-end" }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
             <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : isCreate ? "Add patient" : "Save changes"}
             </button>
           </div>
         </form>

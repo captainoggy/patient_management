@@ -33,9 +33,8 @@ export function PatientsPage({ clinic, onLogout }: Props) {
     patients,
     listCount,
     page: listPage,
-    setPage: setListPage,
-    listNext,
-    listPrevious,
+    goToPage,
+    totalPages,
     loading,
     error,
     setError,
@@ -67,12 +66,12 @@ export function PatientsPage({ clinic, onLogout }: Props) {
   }
 
   async function handleDelete(p: Patient) {
-    if (!window.confirm(`Delete ${p.first_name} ${p.last_name}?`)) return;
+    if (!window.confirm(`Remove ${p.first_name} ${p.last_name} from the directory?`)) return;
     try {
       await deletePatient(p.id);
       await reload();
     } catch {
-      setError("Delete failed.");
+      setError("Could not delete this patient. Try again.");
     }
   }
 
@@ -110,42 +109,65 @@ export function PatientsPage({ clinic, onLogout }: Props) {
 
   return (
     <div className="app-shell">
-      <header className="row-between" style={{ marginBottom: "1.25rem" }}>
+      <header className="page-header">
         <div>
-          <h1 style={{ margin: "0 0 0.25rem" }}>Patients</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            {clinic.name}
-          </p>
+          <h1 className="page-title">Patients</h1>
+          <p className="page-subtitle">{clinic.name}</p>
         </div>
-        <div className="row">
+        <div className="toolbar">
           <button type="button" className="btn btn-primary" onClick={openCreate}>
             Add patient
           </button>
-          <button type="button" className="btn btn-ghost" onClick={() => void doLogout()}>
+          <button type="button" className="btn btn-secondary" onClick={() => void doLogout()}>
             Sign out
           </button>
         </div>
       </header>
 
-      {error ? <p className="error">{error}</p> : null}
+      {error ? (
+        <div className="alert alert-error" role="alert">
+          <span>{error}</span>
+        </div>
+      ) : null}
 
       <section className="panel">
-        {loading ? (
-          <p className="muted">Loading…</p>
-        ) : listCount === 0 ? (
-          <p className="muted">No patients yet. Add one to get started.</p>
-        ) : patients.length === 0 ? (
-          <p className="muted">No rows on this page. Try another page.</p>
-        ) : (
-          <PatientTable patients={patients} onEdit={openEdit} onDelete={handleDelete} />
-        )}
+        <div className="panel-body">
+          {loading ? (
+            <div className="loading-state" aria-busy="true">
+              <div className="loading-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <p className="muted">Loading patients…</p>
+            </div>
+          ) : listCount === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon" aria-hidden="true">
+                ◎
+              </div>
+              <p className="muted" style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>
+                No patients in this clinic yet. Add someone to start building the directory.
+              </p>
+              <button type="button" className="btn btn-primary" onClick={openCreate}>
+                Add first patient
+              </button>
+            </div>
+          ) : patients.length === 0 ? (
+            <div className="empty-state panel-padded">
+              <p className="muted">No results on this page. Use the pager below or go back.</p>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <PatientTable patients={patients} onEdit={openEdit} onDelete={handleDelete} />
+            </div>
+          )}
+        </div>
         <PatientListPagination
           listCount={listCount}
           page={listPage}
-          hasPrevious={!!listPrevious}
-          hasNext={!!listNext}
-          onPrevious={() => setListPage((p) => Math.max(1, p - 1))}
-          onNext={() => setListPage((p) => p + 1)}
+          totalPages={totalPages}
+          onPageChange={goToPage}
         />
       </section>
 

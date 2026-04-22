@@ -33,13 +33,13 @@ export function LoginPage({ onAuthed }: Props) {
   }
 
   return (
-    <div className="app-shell">
-      <div className="panel stack" style={{ maxWidth: 420, margin: "4rem auto" }}>
+    <div className="auth-layout">
+      <div className="auth-card panel stack" style={{ padding: "2rem 1.75rem" }}>
         <div>
-          <h1 style={{ margin: "0 0 0.25rem" }}>Patient Management</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Sign in with your clinic account.
-          </p>
+          <h1 className="page-title" style={{ fontSize: "1.5rem" }}>
+            Patient Management
+          </h1>
+          <p className="page-subtitle">Sign in to your clinic workspace.</p>
         </div>
         <form className="stack" onSubmit={onSubmit}>
           <label className="field">
@@ -61,13 +61,18 @@ export function LoginPage({ onAuthed }: Props) {
               required
             />
           </label>
-          {error ? <div className="error">{error}</div> : null}
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          {error ? (
+            <div className="alert alert-error" role="alert">
+              {error}
+            </div>
+          ) : null}
+          <button className="btn btn-primary" style={{ width: "100%" }} type="submit" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <p className="muted" style={{ margin: 0 }}>
-          Docker demo: user <strong>demo</strong> / password <strong>demo12345</strong>.
+        <p className="muted" style={{ margin: 0, fontSize: "0.8125rem", lineHeight: 1.5 }}>
+          Local demo: <strong style={{ color: "var(--text-secondary)" }}>demo</strong> /{" "}
+          <strong style={{ color: "var(--text-secondary)" }}>demo12345</strong>
         </p>
       </div>
     </div>

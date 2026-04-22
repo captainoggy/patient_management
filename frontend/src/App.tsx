@@ -34,8 +34,15 @@ export function App() {
 
   if (!ready) {
     return (
-      <div className="app-shell">
-        <p className="muted">Loading…</p>
+      <div className="auth-layout" aria-busy="true">
+        <div className="loading-state">
+          <div className="loading-dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <p className="muted">Starting…</p>
+        </div>
       </div>
     );
   }
