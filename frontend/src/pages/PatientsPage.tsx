@@ -63,12 +63,14 @@ export function PatientsPage({ clinic, onLogout }: Props) {
 
   function openCreate() {
     setFormError(null);
+    setNotice(null);
     setForm(emptyPayload);
     setEditor({ mode: "create" });
   }
 
   function openEdit(p: Patient) {
     setFormError(null);
+    setNotice(null);
     setForm({
       first_name: p.first_name,
       last_name: p.last_name,
@@ -136,13 +138,19 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       ...form,
       date_of_birth: dob,
     };
+    const mode = editor.mode;
+    const label = `${payload.first_name.trim()} ${payload.last_name.trim()}`;
     try {
-      if (editor.mode === "create") {
+      if (mode === "create") {
         await createPatient(payload);
       } else {
         await updatePatient(editor.patientId, payload);
       }
       closeEditor();
+      setError(null);
+      setNotice(
+        mode === "create" ? `${label} was added successfully.` : `${label} was updated successfully.`,
+      );
       await reload();
     } catch (err) {
       setFormError(messageFromSaveError(err));

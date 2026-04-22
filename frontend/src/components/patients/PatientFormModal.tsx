@@ -60,7 +60,7 @@ export function PatientFormModal({
         </div>
 
         {formError ? (
-          <div className="alert alert-error modal-alert" role="alert">
+          <div className="alert alert-error modal-alert" role="alert" aria-live="polite">
             {formError}
           </div>
         ) : null}
