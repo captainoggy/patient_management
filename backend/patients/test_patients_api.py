@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -80,6 +81,22 @@ class PatientApiTests(TestCase):
         p = Patient.objects.get(id=r.data["id"])
         self.assertEqual(p.clinic_id, self.clinic.id)
 
+    def test_create_patient_allows_todays_dob_with_client_calendar_header(self):
+        self.client.force_login(self.user)
+        today = timezone.localdate().isoformat()
+        r = self.client.post(
+            "/api/v1/patients/",
+            {
+                "first_name": "Today",
+                "last_name": "Baby",
+                "date_of_birth": today,
+            },
+            format="json",
+            HTTP_X_CLIENT_CALENDAR_DATE=today,
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["date_of_birth"], today)
+
     def test_validation_rejects_future_dob(self):
         self.client.force_login(self.user)
         r = self.client.post(
@@ -90,6 +107,7 @@ class PatientApiTests(TestCase):
                 "date_of_birth": "2099-01-01",
             },
             format="json",
+            HTTP_X_CLIENT_CALENDAR_DATE=timezone.localdate().isoformat(),
         )
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 

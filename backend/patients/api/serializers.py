@@ -1,7 +1,30 @@
+from datetime import date, timedelta
+
 from django.utils import timezone
 from rest_framework import serializers
 
 from patients.models import Patient
+
+
+def _date_of_birth_upper_bound(request) -> date:
+    """
+    Latest calendar date allowed as DOB: aligns server UTC "today" with the browser's
+    idea of "today" (X-Client-Calendar-Date), capped to at most one day after the
+    server's date so spoofed headers cannot open a large future window.
+    """
+    server_today = timezone.localdate()
+    if request is None:
+        return server_today
+    raw = request.META.get("HTTP_X_CLIENT_CALENDAR_DATE", "").strip()
+    if not raw:
+        return server_today
+    try:
+        client_today = date.fromisoformat(raw)
+    except ValueError:
+        return server_today
+    latest = server_today + timedelta(days=1)
+    capped = min(client_today, latest)
+    return max(server_today, capped)
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -52,7 +75,10 @@ class PatientSerializer(serializers.ModelSerializer):
         return v
 
     def validate_date_of_birth(self, value):
-        if value is not None and value > timezone.now().date():
+        if value is None:
+            return value
+        request = self.context.get("request")
+        if value > _date_of_birth_upper_bound(request):
             raise serializers.ValidationError("Date of birth cannot be in the future.")
         return value
 

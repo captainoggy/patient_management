@@ -93,7 +93,7 @@ export function PatientFormModal({
               value={form.date_of_birth ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, date_of_birth: e.target.value }))}
             />
-            <span className="field-hint">Cannot be a future date.</span>
+            <span className="field-hint">Today or any earlier calendar date (your time zone).</span>
           </label>
           <div className="row" style={{ gap: "1rem" }}>
             <label className="field">

@@ -1,4 +1,5 @@
 import { apiUrl } from "./config";
+import { todayIsoDateLocal } from "../utils/dateOfBirth";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -25,6 +26,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (init.body != null && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+  headers.set("X-Client-Calendar-Date", todayIsoDateLocal());
   if (!SAFE.has(method)) {
     const csrf = getCsrfToken();
     if (csrf) {
