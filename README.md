@@ -2,6 +2,13 @@
 
 Full-stack clinic patient directory: **Django** API, **React + TypeScript** UI, **Docker Compose** stack, and **GitHub Actions** CI (manual `workflow_dispatch`).
 
+## Authentication & tenancy (for reviewers)
+
+- **There is no anonymous access to patient data.** List/create/update/delete patients require an authenticated **session** (cookie) after `POST /api/v1/auth/login/`. `PatientViewSet` is scoped by **`HasPatientClinicAccess`** and **`resolve_clinic_id`** (see **Clinic scoping** below)—patient rows are never “global.”
+- **Default credentials (local Docker):** after `docker compose up`, the API runs `seed_demo` when **`SEED_DEMO=1`** (default in Compose). Log in as **`demo`** / **`demo12345`**. That user has a **`UserProfile`** tied to the seeded **Demo Clinic**.
+- **Controlling the demo shortcut:** set **`SEED_DEMO=0`** in your environment (or Compose) to skip seeding; create users and `UserProfile` rows via **Django admin** (`/admin/`) instead. There is no separate “dev bypass” flag that disables auth for patients—only optional **`DJANGO_FIXED_CLINIC_ID`** for single-clinic deployments (still requires login).
+- **Useful env vars:** see **`.env.example`** at the repo root (copy to `.env` for Compose overrides).
+
 ## Run with Docker
 
 Prerequisites: Docker with Compose v2.
