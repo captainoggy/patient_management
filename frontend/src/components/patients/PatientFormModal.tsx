@@ -2,6 +2,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { useEffect } from "react";
 
 import type { PatientPayload } from "../../api/patients";
+import { todayIsoDateLocal } from "../../utils/dateOfBirth";
 
 export type EditorState = { mode: "create" } | { mode: "edit"; patientId: number };
 
@@ -10,11 +11,20 @@ type Props = {
   form: PatientPayload;
   setForm: Dispatch<SetStateAction<PatientPayload>>;
   saving: boolean;
+  formError: string | null;
   onClose: () => void;
   onSubmit: (e: FormEvent) => void;
 };
 
-export function PatientFormModal({ editor, form, setForm, saving, onClose, onSubmit }: Props) {
+export function PatientFormModal({
+  editor,
+  form,
+  setForm,
+  saving,
+  formError,
+  onClose,
+  onSubmit,
+}: Props) {
   useEffect(() => {
     if (!editor) return;
     const onKey = (e: KeyboardEvent) => {
@@ -27,6 +37,7 @@ export function PatientFormModal({ editor, form, setForm, saving, onClose, onSub
   if (!editor) return null;
 
   const isCreate = editor.mode === "create";
+  const dobMax = todayIsoDateLocal();
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
@@ -47,7 +58,14 @@ export function PatientFormModal({ editor, form, setForm, saving, onClose, onSub
               : "Update details and save. Changes apply immediately."}
           </p>
         </div>
-        <form className="stack" onSubmit={(e) => void onSubmit(e)}>
+
+        {formError ? (
+          <div className="alert alert-error modal-alert" role="alert">
+            {formError}
+          </div>
+        ) : null}
+
+        <form className="stack" noValidate onSubmit={(e) => void onSubmit(e)}>
           <div className="row" style={{ gap: "1rem" }}>
             <label className="field">
               First name
@@ -71,9 +89,11 @@ export function PatientFormModal({ editor, form, setForm, saving, onClose, onSub
             Date of birth
             <input
               type="date"
+              max={dobMax}
               value={form.date_of_birth ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, date_of_birth: e.target.value }))}
             />
+            <span className="field-hint">Cannot be a future date.</span>
           </label>
           <div className="row" style={{ gap: "1rem" }}>
             <label className="field">

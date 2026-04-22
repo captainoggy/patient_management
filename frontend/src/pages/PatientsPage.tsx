@@ -1,11 +1,12 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, type SetStateAction } from "react";
 
 import { PatientFormModal, type EditorState } from "../components/patients/PatientFormModal";
 import { PatientListPagination } from "../components/patients/PatientListPagination";
 import { PatientTable } from "../components/patients/PatientTable";
 import type { ClinicSummary } from "../api/auth";
 import { logout as logoutApi } from "../api/auth";
-import { ApiError } from "../api/http";
+import { messageFromSaveError } from "../api/drfErrors";
+import { isDateOfBirthInFuture } from "../utils/dateOfBirth";
 import {
   createPatient,
   deletePatient,
@@ -47,18 +48,24 @@ export function PatientsPage({ clinic, onLogout }: Props) {
 
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [form, setForm] = useState<PatientPayload>(emptyPayload);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function openCreate() {
+    setFormError(null);
     setForm(emptyPayload);
     setEditor({ mode: "create" });
   }
 
   function openEdit(p: Patient) {
+    setFormError(null);
     setForm({
       first_name: p.first_name,
       last_name: p.last_name,
-      date_of_birth: p.date_of_birth ?? "",
+      date_of_birth: (() => {
+        const raw = p.date_of_birth ?? "";
+        return raw && isDateOfBirthInFuture(raw) ? "" : raw;
+      })(),
       email: p.email,
       phone: p.phone,
     });
@@ -66,7 +73,13 @@ export function PatientsPage({ clinic, onLogout }: Props) {
   }
 
   function closeEditor() {
+    setFormError(null);
     setEditor(null);
+  }
+
+  function patchForm(next: SetStateAction<PatientPayload>) {
+    setFormError(null);
+    setForm(next);
   }
 
   async function handleDelete(p: Patient) {
@@ -82,11 +95,17 @@ export function PatientsPage({ clinic, onLogout }: Props) {
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (!editor) return;
+    setFormError(null);
     setSaving(true);
-    setError(null);
+    const dob = form.date_of_birth?.trim() || null;
+    if (dob && isDateOfBirthInFuture(dob)) {
+      setFormError("Date of birth cannot be in the future.");
+      setSaving(false);
+      return;
+    }
     const payload: PatientPayload = {
       ...form,
-      date_of_birth: form.date_of_birth || null,
+      date_of_birth: dob,
     };
     try {
       if (editor.mode === "create") {
@@ -97,7 +116,7 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       closeEditor();
       await reload();
     } catch (err) {
-      setError(err instanceof ApiError ? "Save failed. Check required fields." : "Save failed.");
+      setFormError(messageFromSaveError(err));
     } finally {
       setSaving(false);
     }
@@ -182,8 +201,9 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       <PatientFormModal
         editor={editor}
         form={form}
-        setForm={setForm}
+        setForm={patchForm}
         saving={saving}
+        formError={formError}
         onClose={closeEditor}
         onSubmit={(e) => void handleSave(e)}
       />

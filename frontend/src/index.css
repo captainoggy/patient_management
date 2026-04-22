@@ -637,3 +637,15 @@ table.patient-table {
 .modal-header {
   margin-bottom: 1.25rem;
 }
+
+.modal-alert {
+  margin: 0 0 0.25rem;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
