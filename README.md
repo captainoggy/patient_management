@@ -1,6 +1,14 @@
 # Patient Management
 
-Full-stack clinic patient directory: **Django** API, **React + TypeScript** UI, **Docker Compose** stack, and **GitHub Actions** CI (manual `workflow_dispatch`).
+Full-stack clinic patient directory: **Django REST Framework** API, **React + TypeScript** UI, **Docker Compose** stack, and **GitHub Actions** CI.
+
+## Reviewer quick start
+
+1. **Prerequisites:** Docker with Compose v2; optionally Node 20+ and Python 3.12+ for local (non-Docker) dev.
+2. **Clone → env → up:** `cp .env.example .env` (optional), then `docker compose up --build` (or `make up`).
+3. **Migrations:** run automatically in the `api` container on startup; to run only migrations: `make migrate`.
+4. **URLs:** UI at **http://localhost:8080**; API health at **http://localhost:8080/api/v1/health/** (proxied). Django admin: **http://localhost:8080/admin/** (create superuser in container if needed: `docker compose exec api python manage.py createsuperuser`).
+5. **Log in:** use **`demo`** / **`demo12345`** when **`SEED_DEMO=1`** (Compose default). Session + CSRF: call **`GET /api/v1/auth/session/`** first, then **`POST /api/v1/auth/login/`** with the JSON below.
 
 ## Authentication & tenancy (for reviewers)
 
@@ -72,6 +80,30 @@ Vite proxies `/api` to `http://127.0.0.1:8000`, so the UI stays same-origin with
 
 Authenticated requests use the **session cookie**; mutating requests send **`X-CSRFToken`** (see `GET /auth/session/`).
 
+### Example JSON payloads
+
+**Login** — `POST /api/v1/auth/login/` (after `GET /api/v1/auth/session/` for CSRF cookie):
+
+```json
+{ "username": "demo", "password": "demo12345" }
+```
+
+**Create patient** — `POST /api/v1/patients/` (authenticated; clinic from scoping rules; body has no `clinic` field):
+
+```json
+{
+  "first_name": "Ada",
+  "last_name": "Lovelace",
+  "date_of_birth": "1815-12-10",
+  "email": "ada@example.com",
+  "phone": "+1 555 0100"
+}
+```
+
+**Update patient** — `PATCH /api/v1/patients/{id}/` with any subset of writable fields (`first_name`, `last_name`, `date_of_birth`, `email`, `phone`).
+
+**List (paginated)** — `GET /api/v1/patients/?page=1&page_size=20` → `{ "count", "next", "previous", "results": [ ... ] }`.
+
 ### Clinic scoping for `/api/v1/patients/`
 
 Every patient operation runs in exactly **one clinic id**, resolved in this order:
@@ -84,7 +116,10 @@ The React app passes **`clinic_id`** on list requests to match the logged-in use
 
 ## CI
 
-GitHub Actions workflow **CI** is triggered only via **Actions → CI → Run workflow** (`workflow_dispatch`). It runs Django tests (SQLite) and a production frontend build.
+Workflow **`.github/workflows/ci.yml`** runs on **`pull_request`** and on **`workflow_dispatch`** (Actions → CI → Run workflow).
+
+- **Backend:** `pip install` → `manage.py check` → `makemigrations --check --dry-run` → `manage.py test patients` (SQLite via `DJANGO_DB_ENGINE=sqlite`).
+- **Frontend:** `npm ci` → `npm run lint` → `npm run typecheck` → `npm run build` (`VITE_API_ROOT=/api`).
 
 ## Domain model
 
