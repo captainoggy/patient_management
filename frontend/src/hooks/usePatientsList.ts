@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { ApiError } from "../api/http";
 import { listPatients, type Patient } from "../api/patients";
 import {
   readPageQuery,
@@ -59,8 +60,20 @@ export function usePatientsList(clinicId: number) {
       const data = await listPatients(page, pageSize, clinicId);
       setPatients(data.results);
       setListCount(data.count);
-    } catch {
+    } catch (err) {
+      // DRF returns 404 when ?page= is past the last page (e.g. after deleting the
+      // only row on the final page). Recover by jumping to page 1 instead of
+      // leaving stale rows and a misleading error banner.
+      if (err instanceof ApiError && err.status === 404 && page > 1) {
+        setQuery((q) => {
+          writePaginationQuery(1, q.pageSize, true);
+          return { ...q, page: 1 };
+        });
+        return;
+      }
       setError("Could not load patients.");
+      setPatients([]);
+      setListCount(0);
     } finally {
       setLoading(false);
     }

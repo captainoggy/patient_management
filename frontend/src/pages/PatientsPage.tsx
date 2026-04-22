@@ -112,12 +112,13 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       await deletePatient(id);
       setDeleteTarget(null);
       setNotice(`${label} was removed successfully.`);
-      await reload();
     } catch {
       setError("Could not delete this patient. Try again.");
+      return;
     } finally {
       setDeleteBusy(false);
     }
+    await reload();
   }
 
   async function handleSave(e: FormEvent) {
