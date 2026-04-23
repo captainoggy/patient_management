@@ -65,13 +65,13 @@ Vercel serves the Vite build and **rewrites** `/api/*` to your Render service so
 ### Render
 
 - Blueprint **`render.yaml`** or Web Service: **`./backend/Dockerfile`**, context **`./backend`**.
-- **Environment:** Set **`DJANGO_CSRF_TRUSTED_ORIGINS`** to each Vercel origin explicitly (e.g. `https://your-app.vercel.app`, `https://app.example.com`—comma-separated; **no** `*` wildcards). **`DJANGO_ALLOWED_HOSTS`** must match your Render hostname (see **`render.yaml`** default). **`DJANGO_HTTPS_DEPLOYMENT=true`**. **`SEED_DEMO`**: `1` once for demo user, then **`0`**.
+- **Environment:** Set **`DJANGO_CSRF_TRUSTED_ORIGINS`** to each Vercel origin explicitly (e.g. `https://your-app.vercel.app`, `https://app.example.com`—comma-separated; **no** `*` wildcards). **`DJANGO_HTTPS_DEPLOYMENT=true`**. **`SEED_DEMO`**: `1` once for demo user, then **`0`**. The real **`*.onrender.com`** hostname (including any Render suffix) is **appended to `ALLOWED_HOSTS` automatically** via Render’s `RENDER_EXTERNAL_HOSTNAME`. Add **`DJANGO_ALLOWED_HOSTS`** in the dashboard only for extra hostnames (e.g. a custom API domain).
 
 ### Vercel
 
 - **Do not** use the **“Services”** preset that deploys **Django** on Vercel. Deploy **one** Vite/Other app; API stays on **Render**.
 - **Root directory:** **`.`** (repo root) → root **`vercel.json`**, or **`frontend`** → **`frontend/vercel.json`** (do not mix with `cd frontend` when already in `frontend/`). **`VITE_API_ROOT=/api`** is in **`vercel.json` `build.env`**.
-- **Rewrites** in those files target **`https://patient-mgmt-api.onrender.com/api/*`**; if your Render name differs, update **both** rewrites and **`DJANGO_ALLOWED_HOSTS`**.
+- **Rewrites** in those files must use your service’s real URL (e.g. **`https://patient-mgmt-api-o6ma.onrender.com/api/*`** in the Render dashboard), not a guessed hostname. Update **`vercel.json`** (and **`frontend/vercel.json`**) when the API URL changes.
 
 ### Order
 

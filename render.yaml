@@ -22,8 +22,8 @@ services:
         value: "false"
       - key: DJANGO_HTTPS_DEPLOYMENT
         value: "true"
-      - key: DJANGO_ALLOWED_HOSTS
-        value: patient-mgmt-api.onrender.com
+      # On Render, settings.py appends RENDER_EXTERNAL_HOSTNAME to ALLOWED_HOSTS (actual *.onrender.com host,
+      # including suffixes). Set DJANGO_ALLOWED_HOSTS in the dashboard only for custom domains, etc.
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
         sync: false
       - key: SEED_DEMO

@@ -21,6 +21,13 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 raw_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,api")
 ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
+# Render sets RENDER_EXTERNAL_HOSTNAME to the real *.onrender.com host (e.g. with a suffix if the base name
+# is taken). Allow it even when DJANGO_ALLOWED_HOSTS still lists a guessed hostname from a blueprint.
+if os.environ.get("RENDER", "").lower() in ("1", "true", "yes"):
+    _render_host = (os.environ.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
+    if _render_host and _render_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]
+
 INSTALLED_APPS = [
     "jazzmin",
     "django.contrib.admin",
