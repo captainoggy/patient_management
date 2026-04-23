@@ -13,9 +13,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN chmod +x /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh \
+    && adduser --disabled-password --gecos "" appuser \
+    && chown -R appuser:appuser /app
 
 ENV DJANGO_SETTINGS_MODULE=config.settings
+
+USER appuser
 
 EXPOSE 8000
 
