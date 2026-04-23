@@ -5,27 +5,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('clinics', '0001_initial'),
+        ("clinics", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Clinician',
+            name="Clinician",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('first_name', models.CharField(max_length=120)),
-                ('last_name', models.CharField(max_length=120)),
-                ('role', models.CharField(blank=True, max_length=120)),
-                ('email', models.EmailField(blank=True, max_length=254)),
-                ('clinic', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='clinicians', to='clinics.clinic')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("first_name", models.CharField(max_length=120)),
+                ("last_name", models.CharField(max_length=120)),
+                ("role", models.CharField(blank=True, max_length=120)),
+                ("email", models.EmailField(blank=True, max_length=254)),
+                (
+                    "clinic",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="clinicians",
+                        to="clinics.clinic",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('last_name', 'first_name'),
-                'indexes': [models.Index(fields=['clinic', 'last_name'], name='clinicians__clinic__57a471_idx')],
+                "ordering": ("last_name", "first_name"),
+                "indexes": [
+                    models.Index(
+                        fields=["clinic", "last_name"], name="clinicians__clinic__57a471_idx"
+                    )
+                ],
             },
         ),
     ]

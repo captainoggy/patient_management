@@ -5,30 +5,45 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('clinics', '0001_initial'),
+        ("clinics", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Patient',
+            name="Patient",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('first_name', models.CharField(max_length=120)),
-                ('last_name', models.CharField(max_length=120)),
-                ('date_of_birth', models.DateField(blank=True, null=True)),
-                ('email', models.EmailField(blank=True, max_length=254)),
-                ('phone', models.CharField(blank=True, max_length=32)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('clinic', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='patients', to='clinics.clinic')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("first_name", models.CharField(max_length=120)),
+                ("last_name", models.CharField(max_length=120)),
+                ("date_of_birth", models.DateField(blank=True, null=True)),
+                ("email", models.EmailField(blank=True, max_length=254)),
+                ("phone", models.CharField(blank=True, max_length=32)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "clinic",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="patients",
+                        to="clinics.clinic",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('last_name', 'first_name'),
-                'indexes': [models.Index(fields=['clinic', 'last_name'], name='patients_pa_clinic__35db86_idx')],
+                "ordering": ("last_name", "first_name"),
+                "indexes": [
+                    models.Index(
+                        fields=["clinic", "last_name"], name="patients_pa_clinic__35db86_idx"
+                    )
+                ],
             },
         ),
     ]

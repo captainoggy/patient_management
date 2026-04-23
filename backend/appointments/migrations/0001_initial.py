@@ -5,29 +5,49 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('clinicians', '0001_initial'),
-        ('patients', '0001_initial'),
+        ("clinicians", "0001_initial"),
+        ("patients", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Appointment',
+            name="Appointment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('scheduled_at', models.DateTimeField()),
-                ('notes', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('clinicians', models.ManyToManyField(blank=True, related_name='appointments', to='clinicians.clinician')),
-                ('patient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='appointments', to='patients.patient')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("scheduled_at", models.DateTimeField()),
+                ("notes", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "clinicians",
+                    models.ManyToManyField(
+                        blank=True, related_name="appointments", to="clinicians.clinician"
+                    ),
+                ),
+                (
+                    "patient",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="appointments",
+                        to="patients.patient",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-scheduled_at',),
-                'indexes': [models.Index(fields=['patient', 'scheduled_at'], name='appointment_patient_42b596_idx')],
+                "ordering": ("-scheduled_at",),
+                "indexes": [
+                    models.Index(
+                        fields=["patient", "scheduled_at"], name="appointment_patient_42b596_idx"
+                    )
+                ],
             },
         ),
     ]
