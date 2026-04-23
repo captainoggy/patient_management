@@ -1,13 +1,35 @@
+# --- Python ---
 .venv/
+venv/
 __pycache__/
 *.py[cod]
 *.sqlite3
 db.sqlite3
+*.egg-info/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.cover
+*.log
+
+# --- Env (keep .env.example tracked) ---
 .env
 .env.*
 !.env.example
+
+# --- Node / frontend build ---
 node_modules/
 dist/
-*.egg-info/
-.DS_Store
+.vite/
+*.tsbuildinfo
+
+# --- Django (collectstatic output; not used in dev the same way, but safe) ---
 backend/staticfiles/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
