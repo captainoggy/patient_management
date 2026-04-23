@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -28,9 +28,11 @@ def auth_session(request):
     return Response({"authenticated": False, "csrf": get_token(request)})
 
 
+@csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def auth_login(request):
+    """CSRF-exempt: cross-origin clients may not send csrftoken cookie on POST; CORS is allowlisted."""
     username = request.data.get("username")
     password = request.data.get("password")
     user = authenticate(request, username=username, password=password)
@@ -53,6 +55,7 @@ def auth_login(request):
                 "name": profile.clinic.name,
                 "slug": profile.clinic.slug,
             },
+            "csrf": get_token(request),
         }
     )
 

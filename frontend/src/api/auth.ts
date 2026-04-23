@@ -13,6 +13,7 @@ export type SessionResponse =
 
 export type LoginResponse = {
   clinic: ClinicSummary;
+  csrf: string;
 };
 
 export async function fetchSession(): Promise<SessionResponse> {
@@ -45,7 +46,11 @@ export async function login(username: string, password: string): Promise<LoginRe
   if (!res.ok) {
     throw new ApiError(`HTTP ${res.status}`, res.status, parsed);
   }
-  return parsed as LoginResponse;
+  const body = parsed as LoginResponse;
+  if (body.csrf) {
+    setCsrfFromServer(body.csrf);
+  }
+  return body;
 }
 
 export async function logout(): Promise<void> {
