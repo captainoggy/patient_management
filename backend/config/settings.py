@@ -22,6 +22,7 @@ raw_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,api")
 ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -100,6 +102,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -123,10 +133,13 @@ if not RUNNING_TESTS:
         "anon": "100/minute",
     }
 
-# Browser UI is same-origin with the API (Vite proxy in dev, nginx in Docker).
+# Browser UI is same-origin with the API (Vite proxy in dev, nginx in Docker). Include
+# :8000 so Django admin works when the API is reached directly (e.g. published api:8000).
 _raw_csrf_trusted = os.environ.get(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173," "http://localhost:8080,http://127.0.0.1:8080",
+    "http://localhost:5173,http://127.0.0.1:5173,"
+    "http://localhost:8080,http://127.0.0.1:8080,"
+    "http://localhost:8000,http://127.0.0.1:8000",
 )
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_csrf_trusted.split(",") if o.strip()]
 
@@ -163,6 +176,69 @@ LOGGING: dict = {
     },
 }
 logging.captureWarnings(True)
+
+# django-jazzmin — install "jazzmin" before django.contrib.admin in INSTALLED_APPS.
+JAZZMIN_SETTINGS = {
+    "site_title": "Clinic admin",
+    "site_header": "Patient management",
+    "site_brand": "Care1",
+    "welcome_sign": "Sign in to manage clinics, patients, staff, and visits.",
+    "copyright": "Internal / demo use",
+    "search_model": ["auth.User"],
+    "topmenu_links": [
+        {"name": "API health", "url": "/api/v1/health/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": False,
+    "order_with_respect_to": [
+        "clinics",
+        "patients",
+        "appointments",
+        "clinicians",
+        "auth",
+    ],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "patients.Patient": "fas fa-user-injured",
+        "appointments.Appointment": "fas fa-calendar-check",
+        "clinicians.Clinician": "fas fa-user-md",
+        "clinics.Clinic": "fas fa-hospital",
+    },
+    "default_icon_parents": "fas fa-folder-open",
+    "default_icon_children": "fas fa-dot-circle",
+    "related_modal_active": True,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "auth.user": "collapsible",
+        "auth.group": "vertical_tabs",
+    },
+    "show_ui_builder": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "#1d4ed8",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_flat_style": True,
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-outline-secondary",
+    },
+}
 
 # Render / Vercel-style HTTPS behind a reverse proxy (set only for real TLS deployments).
 if os.environ.get("DJANGO_HTTPS_DEPLOYMENT", "").lower() in ("1", "true", "yes"):

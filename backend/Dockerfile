@@ -13,11 +13,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+ENV DJANGO_SETTINGS_MODULE=config.settings
+ENV DJANGO_SECRET_KEY=collectstatic-build-only
+RUN python manage.py collectstatic --noinput
+
 RUN chmod +x /app/docker-entrypoint.sh \
     && adduser --disabled-password --gecos "" appuser \
     && chown -R appuser:appuser /app
-
-ENV DJANGO_SETTINGS_MODULE=config.settings
 
 USER appuser
 
