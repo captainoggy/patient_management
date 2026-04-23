@@ -167,6 +167,8 @@ This pairing is **appropriate** if the browser only calls **`/api` on your Verce
 
 ### 2) Vercel (React build)
 
+**Not this:** On **New Project**, Vercel may show an **“Services”** preset with **Vite** (`frontend/`) and **Django** (`backend/`). **Do not use that** for this app. The API runs on **Render**; Vercel should host **only the static Vite app**. Skip **experimental** multi-service / `backend` on Vercel. Instead, open **Application** or **Framework** (wording varies) and pick a **single** app: **Vite** or **Other** / **“None”**—one build, not “Services”.
+
 - Import the same repo. **`VITE_API_ROOT=/api`** is set in **`vercel.json` `build.env`**; you can still override in the Vercel project **Environment Variables** if needed.
 - **Root directory (pick one, be consistent with which `vercel.json` is used):**
   - **Repository root (recommended for this repo):** set **Root Directory** to **empty** or **`.`** so Vercel uses the top-level **`vercel.json`**, which runs `cd frontend && npm run build` and outputs **`frontend/dist`**.
