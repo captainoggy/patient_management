@@ -10,7 +10,7 @@ import tseslint from "typescript-eslint";
 const reactJsx = react.configs.flat["jsx-runtime"];
 
 export default defineConfig(
-  globalIgnores(["dist/**", "node_modules/**", "coverage/**"]),
+  globalIgnores(["dist/**", "node_modules/**", "coverage/**", "api/**"]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

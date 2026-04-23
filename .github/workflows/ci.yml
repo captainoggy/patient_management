@@ -51,6 +51,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Verify Vercel /api serverless entry (ESM)
+        run: |
+          node --check "api/[[...path]].js"
+          node -e 'import("./api/[[...path]].js").then(m => { if (typeof m.default !== "function") process.exit(1) })'
       - name: Lint, format, typecheck, unit tests
         run: npm run test:ci
       - name: Production build
