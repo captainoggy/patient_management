@@ -2,10 +2,15 @@
 Django settings — 12-factor style via environment variables for Docker and CI.
 """
 
+import logging
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# `python manage.py test` — disable API throttling so large test runs never hit rate limits.
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[0].endswith("manage.py") and sys.argv[1] == "test"
 
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
@@ -102,20 +107,26 @@ _fixed_clinic = os.environ.get("DJANGO_FIXED_CLINIC_ID", "").strip()
 FIXED_CLINIC_ID = int(_fixed_clinic) if _fixed_clinic.isdigit() else None
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_PARSER_CLASSES": ("rest_framework.parsers.JSONParser",),
     "DEFAULT_PAGINATION_CLASS": "config.pagination.StandardPageNumberPagination",
 }
+if not RUNNING_TESTS:
+    REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = (
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    )
+    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
+        "user": "1000/hour",
+        "anon": "100/minute",
+    }
 
 # Browser UI is same-origin with the API (Vite proxy in dev, nginx in Docker).
 _raw_csrf_trusted = os.environ.get(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,"
-    "http://localhost:8080,http://127.0.0.1:8080",
+    "http://localhost:5173,http://127.0.0.1:5173," "http://localhost:8080,http://127.0.0.1:8080",
 )
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_csrf_trusted.split(",") if o.strip()]
 
@@ -124,8 +135,49 @@ SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
 
+LOGGING: dict = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "std": {
+            "format": "{levelname} {asctime} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "std",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+logging.captureWarnings(True)
+
 # Render / Vercel-style HTTPS behind a reverse proxy (set only for real TLS deployments).
 if os.environ.get("DJANGO_HTTPS_DEPLOYMENT", "").lower() in ("1", "true", "yes"):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    if os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "1").lower() in ("1", "true", "yes"):
+        SECURE_SSL_REDIRECT = True
+    _hsts = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
+    if _hsts > 0:
+        SECURE_HSTS_SECONDS = _hsts
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get("DJANGO_HSTS_SUBDOMAINS", "1").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        if os.environ.get("DJANGO_HSTS_PRELOAD", "").lower() in ("1", "true", "yes"):
+            SECURE_HSTS_PRELOAD = True
