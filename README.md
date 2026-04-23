@@ -167,8 +167,11 @@ This pairing is **appropriate** if the browser only calls **`/api` on your Verce
 
 ### 2) Vercel (React build)
 
-- Import the same repo. Vercel will pick up root **`vercel.json`** (builds `frontend/`, output `frontend/dist`). **`VITE_API_ROOT=/api`** is set under **`vercel.json` `build.env`** so the SPA uses relative API URLs; you can still override in the Vercel project **Environment Variables** if needed.
-- **`vercel.json`** rewrites `/api/*` to **`https://patient-mgmt-api.onrender.com/api/*`**. If your Render service name differs, change **both** this URL and **`DJANGO_ALLOWED_HOSTS`** on Render to match.
+- Import the same repo. **`VITE_API_ROOT=/api`** is set in **`vercel.json` `build.env`**; you can still override in the Vercel project **Environment Variables** if needed.
+- **Root directory (pick one, be consistent with which `vercel.json` is used):**
+  - **Repository root (recommended for this repo):** set **Root Directory** to **empty** or **`.`** so Vercel uses the top-level **`vercel.json`**, which runs `cd frontend && npm run build` and outputs **`frontend/dist`**.
+  - **Only the `frontend` folder:** if Vercel (or the Services wizard) set **Root Directory** to **`frontend`**, use the **`frontend/vercel.json`** config: install/build run in that folder, output **`dist`**. You must not use the `cd frontend && …` form there or the install will fail with “No such file or directory”.
+- **`vercel.json`** rewrites (in **both** files) point `/api/*` to **`https://patient-mgmt-api.onrender.com/api/*`**. If your Render service name differs, change **both** URLs and **`DJANGO_ALLOWED_HOSTS`** on Render to match.
 
 ### 3) Order of operations
 
