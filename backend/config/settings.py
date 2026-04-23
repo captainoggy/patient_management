@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+from corsheaders.defaults import default_headers
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # `python manage.py test` — disable API throttling so large test runs never hit rate limits.
@@ -161,6 +163,8 @@ CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_csrf_trusted.split(",") if o.str
 _cors_origins = os.environ.get("DJANGO_CORS_ALLOWED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(",") if o.strip()]
 CORS_ALLOW_CREDENTIALS = bool(CORS_ALLOWED_ORIGINS)
+# Sent by the SPA on API calls; not in corsheaders’ default allow list—without it, preflight fails in the browser.
+CORS_ALLOW_HEADERS = (*default_headers, "x-client-calendar-date")
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
