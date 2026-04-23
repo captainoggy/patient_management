@@ -76,6 +76,7 @@ export function PatientDetailPage({ clinic }: Props) {
   const [apptSaving, setApptSaving] = useState(false);
   const [deleteApptTarget, setDeleteApptTarget] = useState<PatientAppointment | null>(null);
   const [deleteApptBusy, setDeleteApptBusy] = useState(false);
+  const [deleteApptError, setDeleteApptError] = useState<string | null>(null);
 
   const normalizeDetail = useCallback((data: PatientDetail): PatientDetail => {
     return {
@@ -259,25 +260,31 @@ export function PatientDetailPage({ clinic }: Props) {
   }
 
   function requestDeleteAppt(a: PatientAppointment) {
+    setDeleteApptError(null);
     // Defer opening so the same pointer gesture cannot "click through" to the
     // modal's confirm button (ghost click).
     window.setTimeout(() => setDeleteApptTarget(a), 0);
   }
 
   function cancelDeleteAppt() {
-    if (!deleteApptBusy) setDeleteApptTarget(null);
+    if (!deleteApptBusy) {
+      setDeleteApptTarget(null);
+      setDeleteApptError(null);
+    }
   }
 
   async function confirmDeleteAppt() {
     if (!deleteApptTarget) return;
+    setDeleteApptError(null);
     setDeleteApptBusy(true);
     try {
       await deleteAppointment(deleteApptTarget.id);
       setDeleteApptTarget(null);
+      setDeleteApptError(null);
       setNotice("Visit removed.");
       await refreshDetail();
     } catch {
-      window.alert("Could not delete this visit. Try again.");
+      setDeleteApptError("Could not delete this visit. Try again.");
     } finally {
       setDeleteApptBusy(false);
     }
@@ -444,9 +451,9 @@ export function PatientDetailPage({ clinic }: Props) {
 
       <DeleteAppointmentModal
         appointment={deleteApptTarget}
-        patientName={detail ? `${detail.first_name} ${detail.last_name}` : null}
         busy={deleteApptBusy}
         whenLabel={deleteApptTarget ? formatWhen(deleteApptTarget.scheduled_at ?? "") : ""}
+        error={deleteApptError}
         onCancel={cancelDeleteAppt}
         onConfirm={() => void confirmDeleteAppt()}
       />

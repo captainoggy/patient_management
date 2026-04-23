@@ -29,7 +29,25 @@ export default defineConfig(
   {
     files: ["**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
-    rules: { ...reactHooks.configs.recommended.rules },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "no-restricted-globals": [
+        "error",
+        { name: "confirm", message: "Use a modal, not the native confirm() dialog" },
+        { name: "alert", message: "Use page or modal UI, not window.alert" },
+        { name: "prompt", message: "Use a form field, not window.prompt" },
+      ],
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "window",
+          property: "confirm",
+          message: "Use a modal, not the native confirm() dialog",
+        },
+        { object: "window", property: "alert", message: "Use page or modal UI, not window.alert" },
+        { object: "window", property: "prompt", message: "Use a form, not window.prompt" },
+      ],
+    },
   },
   {
     files: ["**/*.test.ts", "**/*.test.tsx"],

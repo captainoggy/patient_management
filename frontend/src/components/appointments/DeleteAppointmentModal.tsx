@@ -6,18 +6,19 @@ import { ModalBackdrop } from "../ModalBackdrop";
 
 type Props = {
   appointment: PatientAppointment | null;
-  patientName?: string | null;
   busy: boolean;
   whenLabel: string;
+  /** Shown when the API delete fails; same pattern as form errors, not a browser alert. */
+  error?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 };
 
 export function DeleteAppointmentModal({
   appointment,
-  patientName,
   busy,
   whenLabel,
+  error = null,
   onCancel,
   onConfirm,
 }: Props) {
@@ -32,9 +33,6 @@ export function DeleteAppointmentModal({
 
   if (!appointment) return null;
 
-  const notesPreview =
-    appointment.notes && appointment.notes.trim() ? appointment.notes.trim() : "No notes";
-
   return createPortal(
     <ModalBackdrop onDismiss={onCancel} dismissDisabled={busy}>
       <div
@@ -47,26 +45,18 @@ export function DeleteAppointmentModal({
       >
         <div className="modal-header">
           <h2 id="delete-appt-title" className="modal-title">
-            Delete this visit?
+            Delete visit?
           </h2>
           <p id="delete-appt-desc" className="modal-desc">
-            {patientName?.trim() ? (
-              <>
-                Visit for <strong>{patientName.trim()}</strong>
-                <br />
-              </>
-            ) : null}
-            <strong>{whenLabel}</strong>
-            <br />
-            <span className="muted" style={{ fontSize: "0.9rem" }}>
-              {notesPreview}
-            </span>
-            <br />
-            <span style={{ marginTop: "0.5rem", display: "inline-block" }}>
-              This cannot be undone.
-            </span>
+            <strong>The visit on {whenLabel}</strong> will be permanently deleted. This cannot be
+            undone.
           </p>
         </div>
+        {error ? (
+          <div className="alert alert-error modal-alert" role="alert" aria-live="assertive">
+            {error}
+          </div>
+        ) : null}
         <div className="modal-footer" style={{ border: "none", marginTop: 0, paddingTop: 0 }}>
           <button type="button" className="btn btn-secondary" disabled={busy} onClick={onCancel}>
             Cancel
