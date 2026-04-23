@@ -1,7 +1,11 @@
-.PHONY: up down migrate test-backend lint-backend test-frontend check-frontend
+.PHONY: up down migrate test-backend lint-backend test-frontend check-frontend rebuild-web
 
 up:
 	docker compose up --build
+
+# Rebuild only the UI image after frontend changes (Compose may otherwise reuse an old image).
+rebuild-web:
+	docker compose build web && docker compose up -d web
 
 down:
 	docker compose down
