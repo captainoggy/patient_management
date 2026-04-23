@@ -1,0 +1,2 @@
+# Dev/CI only — not installed in production image
+ruff==0.8.4
