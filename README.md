@@ -8,7 +8,7 @@ Full-stack clinic patient directory: **Django REST Framework** API, **React + Ty
 2. **Clone → env → up:** `cp .env.example .env` (optional), then `docker compose up --build` (or `make up`).
 3. **Migrations:** run automatically in the `api` container on startup; to run only migrations: `make migrate`.
 4. **URLs:** UI at **http://localhost:8080**; API health at **http://localhost:8080/api/v1/health/** (proxied). Django admin: **http://localhost:8080/admin/** (create superuser in container if needed: `docker compose exec api python manage.py createsuperuser`).
-5. **Log in:** use **`demo`** / **`demo12345`** when **`SEED_DEMO=1`** (Compose default). Session + CSRF: call **`GET /api/v1/auth/session/`** first, then **`POST /api/v1/auth/login/`** with the JSON below.
+5. **Log in:** use **`demo`** / **`demo12345`** when **`SEED_DEMO=1`** (Compose default). Session + CSRF: call **`GET /api/v1/auth/session/`** first, then **`POST /api/v1/auth/login/`** with the JSON below. After login, the workspace has **Patients**, **Staff**, and **Appointments** tabs (same clinic scope as the API).
 
 ## Authentication & tenancy (for reviewers)
 
@@ -76,6 +76,11 @@ Vite proxies `/api` to `http://127.0.0.1:8000`, so the UI stays same-origin with
 | GET | `/api/v1/patients/` | Paginated list (`count`, `next`, `previous`, `results`). See **Clinic scoping** below. Query: `page`, `page_size` (max 100). |
 | POST | `/api/v1/patients/` | Create patient in the resolved clinic (same scoping rules). |
 | GET/PATCH/PUT/DELETE | `/api/v1/patients/{id}/` | Retrieve, update, delete (object must belong to resolved clinic). |
+| GET | `/api/v1/clinicians/` | Read-only paginated list of **Clinician** rows for the resolved clinic (same scoping rules as patients). Query: `page`, `page_size`. |
+| GET | `/api/v1/clinicians/{id}/` | Read-only detail; clinician must belong to the resolved clinic. |
+| GET | `/api/v1/appointments/` | Paginated **Appointment** rows whose patient is in the resolved clinic; each item includes patient names and nested clinicians. Query: `page`, `page_size`. |
+| POST | `/api/v1/appointments/` | Create a visit: JSON `patient` (id), `scheduled_at` (ISO 8601), optional `notes`, optional `clinician_ids` (ids of **Clinician** rows in the same clinic). |
+| GET/PATCH/PUT/DELETE | `/api/v1/appointments/{id}/` | Retrieve, update, or delete a visit (patient must be in the resolved clinic). **PATCH** accepts `scheduled_at`, `notes`, `clinician_ids` (replaces staff assignment; omit to leave staff unchanged). |
 | GET | `/api/v1/health/` | Liveness JSON for the API process (useful in Compose / load balancers). |
 
 Authenticated requests use the **session cookie**; mutating requests send **`X-CSRFToken`** (see `GET /auth/session/`).
@@ -112,19 +117,19 @@ Every patient operation runs in exactly **one clinic id**, resolved in this orde
 2. **`X-Clinic-Id`** header **or** **`clinic_id`** query parameter — If either is present, that id is used **after validation**: non-superusers may only use their own `UserProfile.clinic_id`; a mismatch is `403`. Superusers may use any existing clinic id; unknown id is `400`.
 3. **Default** — If no fixed id and no header/query: **staff** use `UserProfile.clinic`. **Superusers** must pass `X-Clinic-Id` or `clinic_id` (otherwise `400`), so clinic scope is always explicit for admins.
 
-The React app passes **`clinic_id`** on list requests to match the logged-in user’s clinic from session payload (redundant but clear for API clients and tests).
+The React app passes **`clinic_id`** on list requests to match the logged-in user’s clinic from session payload (redundant but clear for API clients and tests). The **Staff** and **Appointments** tabs call **`/api/v1/clinicians/`** and **`/api/v1/appointments/`** with the same parameter.
 
 ## CI
 
 Workflow **`.github/workflows/ci.yml`** runs on **`pull_request`** and on **`workflow_dispatch`** (Actions → CI → Run workflow).
 
-- **Backend:** `pip install` → `manage.py check` → `makemigrations --check --dry-run` → `manage.py test patients` (SQLite via `DJANGO_DB_ENGINE=sqlite`).
+- **Backend:** `pip install` → `manage.py check` → `makemigrations --check --dry-run` → `manage.py test patients appointments` (SQLite via `DJANGO_DB_ENGINE=sqlite`).
 - **Frontend:** `npm ci` → `npm run lint` → `npm run typecheck` → `npm run build` (`VITE_API_ROOT=/api`).
 
 ## Architecture (brief)
 
 - **Tenancy:** Patients are always tied to a `clinic_id`; each request resolves exactly one clinic (`resolve_clinic_id` + permissions). The API does not expose a global patient list; superusers must pass explicit clinic scope unless `DJANGO_FIXED_CLINIC_ID` is set.
-- **API shape:** Django REST Framework viewsets and serializers; session cookies for auth; mutating calls require CSRF. The SPA talks to `/api` on the same host (Vite proxy, Compose `web` service, or Vercel rewrite) so credentials work without a separate CORS policy.
+- **API shape:** Django REST Framework viewsets and serializers; session cookies for auth; mutating calls require CSRF. The SPA talks to `/api` on the same host (Vite proxy, Compose `web` service, or Vercel rewrite) so credentials work without a separate CORS policy. On the patient show page, staff can **add / edit / delete visits** and assign **clinicians** to each visit (same clinic only).
 - **Docker Compose:** Postgres (`db`) starts first with a healthcheck; `api` runs migrations then serves the app; `web` serves the built React app and reverse-proxies `/api` to `api:8000`.
 
 ## Domain model
@@ -132,7 +137,7 @@ Workflow **`.github/workflows/ci.yml`** runs on **`pull_request`** and on **`wor
 - **Clinic** → many **Patients**; each patient belongs to one clinic.  
 - **Patient** → many **Appointments**.  
 - **Appointment** → many **Clinicians** (staff), each **Clinician** belongs to a **Clinic**.  
-- Staff **User**s link to a clinic via **UserProfile**; the UI lists only that clinic’s patients.
+- Staff **User**s link to a clinic via **UserProfile**; the UI lists only that clinic’s patients, clinicians, and appointments (clinicians and appointments are read-only in the SPA).
 
 ## Dependencies (why each)
 
