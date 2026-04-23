@@ -3,6 +3,8 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from accounts.api.views import auth_login, auth_logout, auth_session
+from appointments.api.views import AppointmentViewSet
+from clinicians.api.views import ClinicianViewSet
 from patients.api.views import PatientViewSet
 
 
@@ -12,6 +14,8 @@ def health(_request):
 
 router = DefaultRouter()
 router.register("patients", PatientViewSet, basename="patient")
+router.register("clinicians", ClinicianViewSet, basename="clinician")
+router.register("appointments", AppointmentViewSet, basename="appointment")
 
 urlpatterns = [
     path("v1/health/", health, name="health"),

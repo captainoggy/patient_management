@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from accounts.models import UserProfile
+from appointments.models import Appointment
+from clinicians.models import Clinician
 from clinics.models import Clinic
 from patients.models import Patient
 
@@ -26,9 +28,7 @@ class PatientApiTests(TestCase):
             last_name="Other",
         )
         self.client = APIClient(enforce_csrf_checks=False)
-        self.other_patient = Patient.objects.get(
-            clinic=self.other_clinic, last_name="Other"
-        )
+        self.other_patient = Patient.objects.get(clinic=self.other_clinic, last_name="Other")
 
     def test_anonymous_cannot_access_patients(self):
         r = self.client.get("/api/v1/patients/")
@@ -64,6 +64,36 @@ class PatientApiTests(TestCase):
         self.client.force_login(self.user)
         r = self.client.get(f"/api/v1/patients/?clinic_id={self.other_clinic.id}")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_excludes_nested_appointments(self):
+        self.client.force_login(self.user)
+        r = self.client.get(f"/api/v1/patients/?clinic_id={self.clinic.id}")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertNotIn("appointments", r.data["results"][0])
+
+    def test_retrieve_includes_nested_appointments_and_clinicians(self):
+        self.client.force_login(self.user)
+        p = Patient.objects.get(clinic=self.clinic, last_name="One")
+        doc = Clinician.objects.create(
+            clinic=self.clinic,
+            first_name="Jamie",
+            last_name="Rivera",
+            role="Physician",
+            email="jr@example.com",
+        )
+        appt = Appointment.objects.create(
+            patient=p,
+            scheduled_at=timezone.now(),
+            notes="Demo visit",
+        )
+        appt.clinicians.add(doc)
+        r = self.client.get(f"/api/v1/patients/{p.id}/?clinic_id={self.clinic.id}")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertIn("appointments", r.data)
+        self.assertEqual(len(r.data["appointments"]), 1)
+        self.assertEqual(r.data["appointments"][0]["notes"], "Demo visit")
+        self.assertEqual(len(r.data["appointments"][0]["clinicians"]), 1)
+        self.assertEqual(r.data["appointments"][0]["clinicians"][0]["last_name"], "Rivera")
 
     def test_create_patient(self):
         self.client.force_login(self.user)

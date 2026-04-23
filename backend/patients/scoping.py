@@ -3,7 +3,8 @@ Resolve which clinic id scopes patient list/create/detail operations.
 
 Documented order (see README):
 1. DJANGO_FIXED_CLINIC_ID — single-tenant override; staff must belong to that clinic.
-2. X-Clinic-Id header or clinic_id query — must match non-superuser's clinic; superuser may use any existing clinic.
+2. X-Clinic-Id or clinic_id query — must match non-superuser's clinic; superuser may
+   use any existing clinic.
 3. Otherwise — staff user's UserProfile.clinic (superusers must pass explicit clinic).
 """
 
@@ -22,7 +23,11 @@ def resolve_clinic_id(request):
     if fixed is not None:
         if not Clinic.objects.filter(pk=fixed).exists():
             raise ValidationError(
-                {"detail": "Server misconfiguration: DJANGO_FIXED_CLINIC_ID does not match a clinic."}
+                {
+                    "detail": (
+                        "Server misconfiguration: DJANGO_FIXED_CLINIC_ID does not match a clinic."
+                    )
+                }
             )
         if user.is_superuser:
             return fixed
@@ -49,9 +54,7 @@ def resolve_clinic_id(request):
         if profile is None or profile.clinic_id is None:
             raise PermissionDenied(detail="User must be assigned to a clinic.")
         if cid != profile.clinic_id:
-            raise PermissionDenied(
-                detail="Requested clinic does not match your clinic assignment."
-            )
+            raise PermissionDenied(detail="Requested clinic does not match your clinic assignment.")
         return cid
 
     if user.is_superuser:

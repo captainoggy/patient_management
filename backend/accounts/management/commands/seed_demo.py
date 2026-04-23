@@ -10,12 +10,13 @@ from clinicians.models import Clinician
 from clinics.models import Clinic
 from patients.models import Patient
 
-
 CLINICIANS = (
     ("Jamie", "Rivera", "Physician", "jamie@example.com"),
     ("Sam", "Okonkwo", "Nurse Practitioner", "sam@example.com"),
     ("Riley", "Chen", "Physician", "riley@example.com"),
     ("Morgan", "Patel", "Physician Assistant", "morgan@example.com"),
+    ("Harper", "Li", "Clinical Pharmacist", "harper.li@example.com"),
+    ("Dev", "Santos", "Behavioral Health", "dev.santos@example.com"),
 )
 
 # first_name, last_name, date_of_birth, email, phone
@@ -32,7 +33,7 @@ PATIENTS = (
     ("Reese", "Nakamura", date(1983, 2, 27), "reese.n@example.com", "555-0109"),
 )
 
-# patient (first, last), stable notes key, days from now, clinician last names
+# patient (first, last), notes key, day offset, clinician last names; negative = past
 APPOINTMENTS = (
     ("Alex", "Nguyen", "[demo] Follow-up visit", 1, ("Rivera",)),
     ("Jordan", "Kim", "[demo] Annual physical", 3, ("Chen", "Okonkwo")),
@@ -42,9 +43,23 @@ APPOINTMENTS = (
     ("Quinn", "Singh", "[demo] Vaccination", 14, ("Okonkwo",)),
     ("Avery", "Dubois", "[demo] Chronic care check-in", 2, ("Rivera", "Chen")),
     ("Skyler", "Hernandez", "[demo] Telehealth consult", 4, ("Patel",)),
-    ("Dakota", "Okafor", "[demo] Mental health intake", 8, ("Okonkwo", "Patel")),
+    ("Dakota", "Okafor", "[demo] Mental health intake", 8, ("Okonkwo", "Patel", "Santos")),
     ("Reese", "Nakamura", "[demo] Post-op follow-up", 12, ("Chen", "Rivera")),
     ("Alex", "Nguyen", "[demo] Vaccine booster", 21, ("Okonkwo",)),
+    # Past visits (history on the schedule)
+    ("Alex", "Nguyen", "[demo] Initial consult (past)", -45, ("Rivera", "Patel")),
+    ("Jordan", "Kim", "[demo] Sick visit (past)", -12, ("Okonkwo",)),
+    ("Taylor", "Brooks", "[demo] Triage call (past)", -3, ("Chen",)),
+    ("Casey", "Martinez", "[demo] Medication review (past)", -60, ("Li", "Rivera")),
+    ("Riley", "Thompson", "[demo] Injury check (past)", -21, ("Chen", "Okonkwo")),
+    # Extra upcoming variety
+    ("Quinn", "Singh", "[demo] Travel clinic consult", 18, ("Patel", "Li")),
+    ("Avery", "Dubois", "[demo] Diabetes education", 6, ("Okonkwo", "Li")),
+    ("Skyler", "Hernandez", "[demo] Care coordination", 9, ("Santos", "Patel")),
+    ("Dakota", "Okafor", "[demo] Follow-up counseling", 11, ("Santos",)),
+    ("Reese", "Nakamura", "[demo] Imaging results", 16, ("Rivera", "Chen")),
+    # Unassigned staff — UI shows em dash in Clinicians column
+    ("Jordan", "Kim", "[demo] Admin block (staff TBD)", 20, ()),
 )
 
 
@@ -108,7 +123,7 @@ class Command(BaseCommand):
             if updates:
                 patient.save(update_fields=updates)
 
-        for p_first, p_last, notes, days_ahead, clinician_lasts in APPOINTMENTS:
+        for p_first, p_last, notes, day_offset, clinician_lasts in APPOINTMENTS:
             patient = Patient.objects.get(
                 clinic=clinic,
                 first_name=p_first,
@@ -118,7 +133,7 @@ class Command(BaseCommand):
                 patient=patient,
                 notes=notes,
                 defaults={
-                    "scheduled_at": timezone.now() + timedelta(days=days_ahead),
+                    "scheduled_at": timezone.now() + timedelta(days=day_offset),
                 },
             )
             for ln in clinician_lasts:

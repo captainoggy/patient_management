@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
+from appointments.api.serializers import AppointmentForPatientSerializer
 from patients.models import Patient
 
 
@@ -25,6 +26,15 @@ def _date_of_birth_upper_bound(request) -> date:
     latest = server_today + timedelta(days=1)
     capped = min(client_today, latest)
     return max(server_today, capped)
+
+
+def _require_nonblank_max120(value: str) -> str:
+    v = (value or "").strip()
+    if not v:
+        raise serializers.ValidationError("This field may not be blank.")
+    if len(v) > 120:
+        raise serializers.ValidationError("Ensure this field has no more than 120 characters.")
+    return v
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -51,20 +61,10 @@ class PatientSerializer(serializers.ModelSerializer):
         )
 
     def validate_first_name(self, value: str) -> str:
-        v = (value or "").strip()
-        if not v:
-            raise serializers.ValidationError("This field may not be blank.")
-        if len(v) > 120:
-            raise serializers.ValidationError("Ensure this field has no more than 120 characters.")
-        return v
+        return _require_nonblank_max120(value)
 
     def validate_last_name(self, value: str) -> str:
-        v = (value or "").strip()
-        if not v:
-            raise serializers.ValidationError("This field may not be blank.")
-        if len(v) > 120:
-            raise serializers.ValidationError("Ensure this field has no more than 120 characters.")
-        return v
+        return _require_nonblank_max120(value)
 
     def validate_phone(self, value: str) -> str:
         if value in (None, ""):
@@ -86,3 +86,10 @@ class PatientSerializer(serializers.ModelSerializer):
         if hasattr(obj, "appointment_count"):
             return int(obj.appointment_count)
         return obj.appointments.count()
+
+
+class PatientDetailSerializer(PatientSerializer):
+    appointments = AppointmentForPatientSerializer(many=True, read_only=True)
+
+    class Meta(PatientSerializer.Meta):
+        fields = PatientSerializer.Meta.fields + ("appointments",)

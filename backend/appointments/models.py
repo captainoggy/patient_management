@@ -22,8 +22,11 @@ class Appointment(models.Model):
 
     class Meta:
         ordering = ("-scheduled_at",)
-        indexes = [
-            models.Index(fields=("patient", "scheduled_at")),
+        constraints = [
+            models.UniqueConstraint(
+                fields=("patient", "scheduled_at"),
+                name="appointment_patient_scheduled_uniq",
+            ),
         ]
 
     def __str__(self) -> str:
