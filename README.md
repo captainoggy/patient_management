@@ -1,82 +1,68 @@
 # Patient Management
 
-Full-stack clinic directory: **Django REST Framework** + **session auth**, **React + TypeScript** SPA, **Docker Compose**, **GitHub Actions** CI. The SPA calls **`/api` on the same host** (Vite proxy, Compose `web`, or Vercel rewrite) so the browser is **same-origin** with the API (session cookies and CSRF; no CORS layer).
+Django + Django REST Framework API and a React (TypeScript) SPA. **Postgres** and the API run in Docker; the UI is served on port **8080** and proxies **`/api`** to the API so the browser stays on one origin (session + CSRF work without a separate CORS layer).
 
-## Quick start (Docker)
+## Public deployment
 
-1. **Prereqs:** Docker with Compose v2. Optionally copy **`.env.example`** → **`.env`** (Compose and secrets).
-2. **Up:** `docker compose up --build` (or `make up`). The `api` service runs **migrations** on start, then optional **`seed_demo`** when `SEED_DEMO=1` (default in Compose).
-3. **URLs:** UI and proxied API **http://localhost:8080**; health **http://localhost:8080/api/v1/health/**. Django admin **http://localhost:8080/admin/** (superuser: `docker compose exec api python manage.py createsuperuser`).
-4. **Login:** with **`SEED_DEMO=1`**, use **`demo`** / **`demo12345`**. The SPA should call **`GET /api/v1/auth/session/`** first, then **`POST /api/v1/auth/login/`**; mutating calls need **`X-CSRFToken`**.
+| | Host |
+|---|------|
+| **Frontend (static SPA)** | [Vercel](https://vercel.com) — [https://patient-management-xb26.vercel.app](https://patient-management-xb26.vercel.app) *(use your Vercel **Domains** URL if it differs.)* |
+| **Backend (API + admin)** | [Render](https://render.com) — [https://patient-mgmt-api-o6ma.onrender.com](https://patient-mgmt-api-o6ma.onrender.com) |
 
-**No anonymous patient access:** list/create/update patients requires an authenticated session. **Clinic scoping** is per request (see table section below). Set **`SEED_DEMO=0`** to skip seeding and manage users via admin. For single-clinic mode see **`DJANGO_FIXED_CLINIC_ID`** in **`.env.example`**.
+The browser only talks to the Vercel origin; `/api` is **rewritten** there to the Render service so sessions stay same-origin. Change **`vercel.json`** rewrites if the API base URL changes.
 
-Migrations only: `make migrate` (or `docker compose run --rm api python manage.py migrate`).
+## Run locally
 
-## Local development (no Docker)
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with [Compose v2](https://docs.docker.com/compose/).
 
-**Backend** (SQLite optional): `cd backend` → venv → `pip install -r requirements.txt` → `export DJANGO_SECRET_KEY=...` and optionally `DJANGO_DB_ENGINE=sqlite` → `migrate` → `seed_demo` → `runserver`.  
-**Frontend:** `cd frontend` → `npm install` → `npm run dev` (Vite proxies `/api` to `http://127.0.0.1:8000`).
+From the repo root:
 
-## API (v1)
+```bash
+docker compose up --build
+```
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/auth/session/` | Session + CSRF cookie; `authenticated` and `clinic` when logged in. |
-| POST | `/api/v1/auth/login/` | JSON `username`, `password`; session. |
-| POST | `/api/v1/auth/logout/` | Logout. |
-| GET | `/api/v1/patients/` | Paginated list. Query: `page`, `page_size` (max 100). |
-| POST | `/api/v1/patients/` | Create in resolved clinic. |
-| GET/PATCH/PUT/DELETE | `/api/v1/patients/{id}/` | CRUD; object must be in resolved clinic. |
-| GET | `/api/v1/clinicians/` | Paginated; clinic-scoped. Query: `page`, `page_size`. |
-| GET | `/api/v1/clinicians/{id}/` | Read-only detail. |
-| GET | `/api/v1/appointments/` | Paginated visits for patients in the resolved clinic. |
-| POST | `/api/v1/appointments/` | Create: `patient`, `scheduled_at` (ISO 8601), optional `notes`, `clinician_ids`. |
-| GET/PATCH/PUT/DELETE | `/api/v1/appointments/{id}/` | Visit CRUD. **PATCH** may update `scheduled_at`, `notes`, `clinician_ids`. |
-| GET | `/api/v1/health/` | Liveness JSON. |
+(Equivalent: `make up`.)
 
-### Example bodies
+- **App:** [http://localhost:8080](http://localhost:8080) — patients: list, add, edit, remove.
+- **Login:** `demo` / `demo12345` (data is seeded on API start when **`SEED_DEMO=1`**, the Compose default).
+- **API health:** [http://localhost:8080/api/v1/health/](http://localhost:8080/api/v1/health/)
+- **Django admin:** [http://localhost:8080/admin/](http://localhost:8080/admin/) — optional superuser:  
+  `docker compose exec api python manage.py createsuperuser`
 
-**Login** (after `GET /auth/session/`): `{ "username": "demo", "password": "demo12345" }`  
-**Create patient:** `first_name`, `last_name`, `date_of_birth`, `email`, `phone` (no `clinic` in body).
+**Optional:** copy **`.env.example`** to **`.env`** if you want to override DB credentials or other settings; Compose works with its built-in defaults without a `.env` file.
 
-### Clinic scoping (patients, clinicians, appointments)
+Migrations run when the `api` container starts. To run them alone: `make migrate` (or `docker compose run --rm api python manage.py migrate`).
 
-One **clinic id** per request, resolved in order:
+## Key features
 
-1. **`DJANGO_FIXED_CLINIC_ID`** (optional) — id must exist; staff must have that clinic in their profile or `403`; superusers follow the same id without passing headers. Unknown id: `400`.
-2. **`X-Clinic-Id`** or **`clinic_id`** — if present, that id is used after validation: non-superusers only their own `UserProfile.clinic_id` (`403` on mismatch). Superusers: any **existing** clinic id; unknown id: `400`.
-3. **Default** (no fixed id, no header/query) — **staff** use `UserProfile.clinic`. **Superusers** must pass **`X-Clinic-Id`** or **`clinic_id`** (otherwise `400`).
+- **Clinic-scoped** patient list and **full CRUD** in the UI (add, edit, delete).
+- **Session authentication** (cookie) with CSRF for mutating API calls; no public patient data without login.
+- **Domain model** aligned with the brief: clinic → patients; patient → appointments; appointment ↔ multiple **clinicians** (M2M).
+- **Appointments** in the app: list/create/edit/delete visits on a patient, assign clinic staff; **read-only** staff directory and org-wide **appointments** list for the same clinic.
+- **Docker Compose** for Postgres, API (migrations + `seed` on start), and nginx + built SPA; **CI** in GitHub Actions (PRs + manual runs), optional **Render** + **Vercel** for production.
+- **Django admin** (local and deployed) for operational access; production static/admin handling via the API image.
 
-The React app passes **`clinic_id`** on lists to match the session. **Stack:** **Clinic** → **Patients** & **Clinicians**; **Appointments** link patients to clinicians. Clinicians/appointments are read-only in the SPA except visit CRUD on the patient page.
+## Engineering highlights
+
+- **API:** DRF, explicit clinic resolution and permissions, DB constraints (e.g. unique visit per patient/time), throttling, structured logging, HTTPS-oriented settings in deployment.
+- **Quality:** Ruff (Python), `manage.py test` (patients, appointments), Vitest/Testing Library/ESLint/Prettier (frontend); CI runs those paths.
+- **Ops:** `render.yaml` blueprint, API container runs as **non-root**, `npm ci` in the frontend image, Dependabot and optional pre-commit hooks; admin UI with collected static files in the API image for production.
+
+## Repo layout
+
+| Path | Role |
+|------|------|
+| `docker-compose.yml` | Postgres, API, and static `web` (nginx on **8080**) |
+| `backend/` | Django project, DRF, models, tests |
+| `frontend/` | Vite + React, unit tests under `npm run test:ci` |
+
+REST routes live under **`/api/v1/`** (e.g. `/api/v1/patients/`). See `backend/config/urls.py` and the `patients` / `appointments` / `clinicians` apps.
 
 ## CI
 
-**`.github/workflows/ci.yml`** on **pull_request** and **workflow_dispatch**: backend Ruff, `manage.py check`, `makemigrations --check --dry-run`, `manage.py test patients appointments` (SQLite); frontend `test:ci` (lint, format, typecheck, unit tests) then `build` with `VITE_API_ROOT=/api`.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on **pull requests** and on **manual dispatch** (Actions → run workflow). It runs backend checks/tests and the frontend `test:ci` + production build.
 
-## Stack
+## Run without Docker (optional)
 
-- **Django** + **DRF**; **Gunicorn** in the API image; **Postgres** in Compose (**psycopg2**). No JWT: session cookies only. Compose: `db` (healthcheck) → `api` (migrate + app) → `web` (static SPA, proxies `/api` to `api:8000`).
-
-## Deploy: Vercel (frontend) + Render (API)
-
-Vercel serves the Vite build and **rewrites** `/api/*` to your Render service so cookies stay same-origin. Push the repo to GitHub; **`render.yaml`** uses free web + Postgres plans unless you change `plan`.
-
-### Render
-
-- Blueprint **`render.yaml`** or Web Service: **`./backend/Dockerfile`**, context **`./backend`**.
-- **Environment:** Set **`DJANGO_CSRF_TRUSTED_ORIGINS`** to each Vercel origin explicitly (e.g. `https://your-app.vercel.app`, `https://app.example.com`—comma-separated; **no** `*` wildcards). **`DJANGO_HTTPS_DEPLOYMENT=true`**. **`SEED_DEMO`**: `1` once for demo user, then **`0`**. The real **`*.onrender.com`** hostname (including any Render suffix) is **appended to `ALLOWED_HOSTS` automatically** via Render’s `RENDER_EXTERNAL_HOSTNAME`. Add **`DJANGO_ALLOWED_HOSTS`** in the dashboard only for extra hostnames (e.g. a custom API domain).
-
-### Vercel
-
-- **Do not** use the **“Services”** preset that deploys **Django** on Vercel. Deploy **one** Vite/Other app; API stays on **Render**.
-- **Root directory:** **`.`** (repo root) → root **`vercel.json`**, or **`frontend`** → **`frontend/vercel.json`** (do not mix with `cd frontend` when already in `frontend/`). **`VITE_API_ROOT=/api`** is in **`vercel.json` `build.env`**.
-- **Rewrites** in those files must use your service’s real URL (e.g. **`https://patient-mgmt-api-o6ma.onrender.com/api/*`** in the Render dashboard), not a guessed hostname. Update **`vercel.json`** (and **`frontend/vercel.json`**) when the API URL changes.
-
-### Order
-
-1. Deploy Render; check **`GET https://<api>.onrender.com/api/v1/health/`**.
-2. Set **`DJANGO_CSRF_TRUSTED_ORIGINS`** to your Vercel URL; restart if needed.
-3. Deploy Vercel; test login. **Admin:** Render **Shell** → `python manage.py createsuperuser`.
-
-If the browser called the Render URL **directly** (cross-site), you would need CORS and cross-site cookies; this project avoids that by design.
+- **API:** `cd backend` → create a venv → `pip install -r requirements.txt` → set `DJANGO_SECRET_KEY` → `python manage.py migrate` and `runserver` (SQLite: set `DJANGO_DB_ENGINE=sqlite`; see **`.env.example`**).
+- **UI:** `cd frontend` → `npm ci` → `npm run dev` (Vite proxies `/api` to the API, default `http://127.0.0.1:8000`).
