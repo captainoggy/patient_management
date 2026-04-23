@@ -3,12 +3,14 @@
 #   https://your-app.vercel.app
 databases:
   - name: patient-mgmt-db
+    plan: free
     databaseName: patient_mgmt
     user: patient_mgmt
 
 services:
   - type: web
     name: patient-mgmt-api
+    plan: free
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend

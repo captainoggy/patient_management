@@ -152,6 +152,8 @@ No JWT library, no CORS middleware: the SPA always talks to the API through the 
 
 This pairing is **appropriate** if the browser only calls **`/api` on your Vercel hostname**. Vercel then **proxies** those requests to Render, so session cookies and CSRF stay same-origin (no CORS layer).
 
+**Prerequisite:** push this repo to GitHub (or GitLab/Bitbucket) so both Render and Vercel can connect it. The blueprint uses the **free** web and Postgres plans (change `plan` in `render.yaml` if you need paid tiers).
+
 ### 1) Render (Django + Postgres)
 
 - Connect the GitHub repo and use **`render.yaml`** (Blueprint) or create a **Web Service** from `./backend/Dockerfile` with context `./backend`.
@@ -165,8 +167,7 @@ This pairing is **appropriate** if the browser only calls **`/api` on your Verce
 
 ### 2) Vercel (React build)
 
-- Import the same repo. Vercel will pick up root **`vercel.json`** (builds `frontend/`, output `frontend/dist`).
-- In **Environment Variables** (Production): **`VITE_API_ROOT`** = `/api` so the SPA calls relative URLs.
+- Import the same repo. Vercel will pick up root **`vercel.json`** (builds `frontend/`, output `frontend/dist`). **`VITE_API_ROOT=/api`** is set under **`vercel.json` `build.env`** so the SPA uses relative API URLs; you can still override in the Vercel project **Environment Variables** if needed.
 - **`vercel.json`** rewrites `/api/*` to **`https://patient-mgmt-api.onrender.com/api/*`**. If your Render service name differs, change **both** this URL and **`DJANGO_ALLOWED_HOSTS`** on Render to match.
 
 ### 3) Order of operations
@@ -174,5 +175,6 @@ This pairing is **appropriate** if the browser only calls **`/api` on your Verce
 1. Deploy **Render** and confirm `GET https://<your-service>.onrender.com/api/v1/health/` returns JSON.
 2. Set **`DJANGO_CSRF_TRUSTED_ORIGINS`** on Render to your **Vercel** URL(s).
 3. Deploy **Vercel**, then smoke-test login and patients on the Vercel URL.
+4. **Django admin** on the API host (`https://<your-service>.onrender.com/admin/`): create a user from the service **Shell** in the Render dashboard, e.g. `python manage.py createsuperuser` (same as local Compose, but run inside the web instance).
 
 If the SPA called the Render URL **directly** in the browser (two different sites), you would need CORS and cross-site cookies; this project avoids that by design.
