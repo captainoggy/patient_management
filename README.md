@@ -33,6 +33,8 @@ docker compose up --build
 
 Migrations run when the `api` container starts. To run them alone: `make migrate` (or `docker compose run --rm api python manage.py migrate`).
 
+**Docker health checks (Compose):** `db` uses `pg_isready`; `api` hits `GET /api/v1/health/`; `web` (nginx) checks the root URL. The `web` service waits until `api` is healthy before starting.
+
 ## Key features
 
 - **Clinic-scoped** patient list and **full CRUD** in the UI (add, edit, delete).
