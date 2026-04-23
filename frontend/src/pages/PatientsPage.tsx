@@ -5,7 +5,9 @@ import { PatientFormModal, type EditorState } from "../components/patients/Patie
 import { PatientListPagination } from "../components/patients/PatientListPagination";
 import { PatientTable } from "../components/patients/PatientTable";
 import type { ClinicSummary } from "../api/auth";
-import { logout as logoutApi } from "../api/auth";
+import { createAppointment } from "../api/appointments";
+import { listClinicians, type Clinician } from "../api/clinicians";
+import { AppointmentEditorModal } from "../components/appointments/AppointmentEditorModal";
 import { messageFromSaveError } from "../api/drfErrors";
 import { isDateOfBirthInFuture } from "../utils/dateOfBirth";
 import {
@@ -19,7 +21,6 @@ import { usePatientsList } from "../hooks/usePatientsList";
 
 type Props = {
   clinic: ClinicSummary;
-  onLogout: () => void;
 };
 
 const emptyPayload: PatientPayload = {
@@ -30,7 +31,7 @@ const emptyPayload: PatientPayload = {
   phone: "",
 };
 
-export function PatientsPage({ clinic, onLogout }: Props) {
+export function PatientsPage({ clinic }: Props) {
   const {
     patients,
     listCount,
@@ -54,6 +55,16 @@ export function PatientsPage({ clinic, onLogout }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [staff, setStaff] = useState<Clinician[]>([]);
+  const [apptVisitFor, setApptVisitFor] = useState<Patient | null>(null);
+  const [apptFormError, setApptFormError] = useState<string | null>(null);
+  const [apptSaving, setApptSaving] = useState(false);
+
+  useEffect(() => {
+    void listClinicians(clinic.id)
+      .then(setStaff)
+      .catch(() => setStaff([]));
+  }, [clinic.id]);
 
   useEffect(() => {
     if (!notice) return;
@@ -92,6 +103,43 @@ export function PatientsPage({ clinic, onLogout }: Props) {
   function patchForm(next: SetStateAction<PatientPayload>) {
     setFormError(null);
     setForm(next);
+  }
+
+  function openAddVisit(p: Patient) {
+    setApptFormError(null);
+    setNotice(null);
+    setApptVisitFor(p);
+  }
+
+  function closeApptModal() {
+    setApptVisitFor(null);
+    setApptFormError(null);
+  }
+
+  async function handleApptSave(payload: {
+    scheduled_at: string;
+    notes: string;
+    clinician_ids: number[];
+  }) {
+    if (!apptVisitFor) return;
+    setApptFormError(null);
+    setApptSaving(true);
+    const label = `${apptVisitFor.first_name} ${apptVisitFor.last_name}`;
+    try {
+      await createAppointment({
+        patient: apptVisitFor.id,
+        scheduled_at: payload.scheduled_at,
+        notes: payload.notes || undefined,
+        clinician_ids: payload.clinician_ids,
+      });
+      closeApptModal();
+      setNotice(`Visit added for ${label}.`);
+      await reload();
+    } catch (err) {
+      setApptFormError(messageFromSaveError(err));
+    } finally {
+      setApptSaving(false);
+    }
   }
 
   function requestDelete(p: Patient) {
@@ -149,7 +197,9 @@ export function PatientsPage({ clinic, onLogout }: Props) {
       closeEditor();
       setError(null);
       setNotice(
-        mode === "create" ? `${label} was added successfully.` : `${label} was updated successfully.`,
+        mode === "create"
+          ? `${label} was added successfully.`
+          : `${label} was updated successfully.`,
       );
       await reload();
     } catch (err) {
@@ -159,16 +209,8 @@ export function PatientsPage({ clinic, onLogout }: Props) {
     }
   }
 
-  async function doLogout() {
-    try {
-      await logoutApi();
-    } finally {
-      onLogout();
-    }
-  }
-
   return (
-    <div className="app-shell">
+    <>
       <header className="page-header">
         <div>
           <h1 className="page-title">Patients</h1>
@@ -177,9 +219,6 @@ export function PatientsPage({ clinic, onLogout }: Props) {
         <div className="toolbar">
           <button type="button" className="btn btn-primary" onClick={openCreate}>
             Add patient
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={() => void doLogout()}>
-            Sign out
           </button>
         </div>
       </header>
@@ -225,7 +264,12 @@ export function PatientsPage({ clinic, onLogout }: Props) {
             </div>
           ) : (
             <div className="table-wrap">
-              <PatientTable patients={patients} onEdit={openEdit} onDelete={requestDelete} />
+              <PatientTable
+                patients={patients}
+                onEdit={openEdit}
+                onAddVisit={openAddVisit}
+                onDelete={requestDelete}
+              />
             </div>
           )}
         </div>
@@ -257,6 +301,20 @@ export function PatientsPage({ clinic, onLogout }: Props) {
         onCancel={cancelDelete}
         onConfirm={confirmDelete}
       />
-    </div>
+
+      {apptVisitFor ? (
+        <AppointmentEditorModal
+          mode="create"
+          patientId={apptVisitFor.id}
+          patientDisplayName={`${apptVisitFor.first_name} ${apptVisitFor.last_name}`}
+          appointment={null}
+          staff={staff}
+          saving={apptSaving}
+          formError={apptFormError}
+          onClose={closeApptModal}
+          onSubmit={(p) => void handleApptSave(p)}
+        />
+      ) : null}
+    </>
   );
 }

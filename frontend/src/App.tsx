@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import type { ClinicSummary } from "./api/auth";
 import { fetchSession } from "./api/auth";
+import { WorkspaceShell } from "./components/WorkspaceShell";
+import { AppointmentsPage } from "./pages/AppointmentsPage";
 import { LoginPage } from "./pages/LoginPage";
+import { PatientDetailPage } from "./pages/PatientDetailPage";
 import { PatientsPage } from "./pages/PatientsPage";
+import { StaffDirectoryPage } from "./pages/StaffDirectoryPage";
 
-export function App() {
+function AppRoutes() {
+  const navigate = useNavigate();
   const [clinic, setClinic] = useState<ClinicSummary | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -26,9 +32,11 @@ export function App() {
 
   const handleAuthed = (c: ClinicSummary) => {
     setClinic(c);
+    navigate("/patients", { replace: true });
   };
 
   const handleLogout = () => {
+    navigate("/", { replace: true });
     setClinic(null);
   };
 
@@ -51,5 +59,21 @@ export function App() {
     return <LoginPage onAuthed={handleAuthed} />;
   }
 
-  return <PatientsPage clinic={clinic} onLogout={handleLogout} />;
+  return (
+    <Routes>
+      {/* path="/" layout is required so nested routes like patients/:id match; a pathless parent can break matching. */}
+      <Route path="/" element={<WorkspaceShell clinic={clinic} onLogout={handleLogout} />}>
+        <Route index element={<Navigate to="/patients" replace />} />
+        <Route path="patients" element={<PatientsPage clinic={clinic} />} />
+        <Route path="patients/:patientId" element={<PatientDetailPage clinic={clinic} />} />
+        <Route path="staff" element={<StaffDirectoryPage clinicId={clinic.id} />} />
+        <Route path="appointments" element={<AppointmentsPage clinicId={clinic.id} />} />
+        <Route path="*" element={<Navigate to="/patients" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
+export function App() {
+  return <AppRoutes />;
 }

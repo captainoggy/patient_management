@@ -1,11 +1,11 @@
-FROM node:20-alpine AS build
+FROM node:20.19-alpine AS build
 WORKDIR /app
 
 ARG VITE_API_ROOT=/api
 ENV VITE_API_ROOT=$VITE_API_ROOT
 
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build

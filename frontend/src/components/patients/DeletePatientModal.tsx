@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import type { Patient } from "../../api/patients";
+import { ModalBackdrop } from "../ModalBackdrop";
 
 type Props = {
   patient: Patient | null;
@@ -24,14 +25,13 @@ export function DeletePatientModal({ patient, busy, onCancel, onConfirm }: Props
   const name = `${patient.first_name} ${patient.last_name}`;
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={busy ? undefined : onCancel}>
+    <ModalBackdrop onDismiss={onCancel} dismissDisabled={busy}>
       <div
         className="modal stack"
         role="alertdialog"
         aria-labelledby="delete-patient-title"
         aria-describedby="delete-patient-desc"
         aria-modal="true"
-        onClick={(ev) => ev.stopPropagation()}
         style={{ width: "min(400px, 100%)" }}
       >
         <div className="modal-header">
@@ -46,11 +46,16 @@ export function DeletePatientModal({ patient, busy, onCancel, onConfirm }: Props
           <button type="button" className="btn btn-secondary" disabled={busy} onClick={onCancel}>
             Cancel
           </button>
-          <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void onConfirm()}>
+          <button
+            type="button"
+            className="btn btn-danger"
+            disabled={busy}
+            onClick={() => void onConfirm()}
+          >
             {busy ? "Removing…" : "Remove patient"}
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }

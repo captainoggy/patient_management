@@ -25,19 +25,16 @@ export function usePatientsList(clinicId: number) {
 
   const { page, pageSize } = query;
 
-  const goToPage = useCallback(
-    (n: number) => {
-      const v = Math.max(1, Math.floor(n));
-      setQuery((q) => {
-        if (q.page !== v) {
-          writePaginationQuery(v, q.pageSize, false);
-          return { ...q, page: v };
-        }
-        return q;
-      });
-    },
-    [],
-  );
+  const goToPage = useCallback((n: number) => {
+    const v = Math.max(1, Math.floor(n));
+    setQuery((q) => {
+      if (q.page !== v) {
+        writePaginationQuery(v, q.pageSize, false);
+        return { ...q, page: v };
+      }
+      return q;
+    });
+  }, []);
 
   const setPageSize = useCallback((size: number) => {
     const ps = clampPageSize(size);
@@ -83,8 +80,7 @@ export function usePatientsList(clinicId: number) {
     void reload();
   }, [reload]);
 
-  const totalPages =
-    listCount > 0 ? Math.max(1, Math.ceil(listCount / pageSize)) : 0;
+  const totalPages = listCount > 0 ? Math.max(1, Math.ceil(listCount / pageSize)) : 0;
 
   useEffect(() => {
     if (loading || totalPages === 0) return;

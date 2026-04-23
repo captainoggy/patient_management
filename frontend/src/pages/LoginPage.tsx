@@ -66,7 +66,12 @@ export function LoginPage({ onAuthed }: Props) {
               {error}
             </div>
           ) : null}
-          <button className="btn btn-primary" style={{ width: "100%" }} type="submit" disabled={loading}>
+          <button
+            className="btn btn-primary"
+            style={{ width: "100%" }}
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>

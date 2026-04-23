@@ -52,6 +52,97 @@ textarea {
   padding: 1.75rem 1.25rem 3rem;
 }
 
+.workspace-header {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.workspace-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.workspace-brand {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.workspace-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.workspace-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.workspace-signout {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.workspace-tabs-row {
+  width: 100%;
+  padding: 0.75rem 0 1rem;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(to bottom, rgb(248 250 252 / 0.9), transparent);
+}
+
+.app-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.app-tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.app-tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.app-tab.is-active {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.workspace-tab-desc {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 52rem;
+}
+
 .auth-layout {
   min-height: 100vh;
   display: flex;
@@ -188,7 +279,9 @@ textarea {
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 input:hover,
@@ -240,7 +333,11 @@ textarea {
   cursor: pointer;
   font-weight: 600;
   font-size: 0.875rem;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .btn:focus-visible {
@@ -359,9 +456,192 @@ table.patient-table {
   background: #fafbfc;
 }
 
+.patient-row-clickable {
+  cursor: pointer;
+}
+
+.patient-row-clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.patient-row-clickable:hover {
+  background: #f1f5f9 !important;
+}
+
+.patient-row-actions {
+  cursor: default;
+}
+
+.patient-row-actions:hover {
+  background: transparent !important;
+}
+
 .name-cell {
   font-weight: 600;
   color: var(--text);
+}
+
+.text-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.route-error-detail {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+}
+
+.patient-show-nav {
+  margin: 0 0 1rem;
+}
+
+.patient-show {
+  overflow: hidden;
+}
+
+.patient-show-hero {
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, #f8fafc, var(--surface));
+}
+
+.patient-show-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.patient-show-name {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.patient-show-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.patient-show-facts dt {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.patient-show-facts dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.patient-show-block {
+  border-top: 1px solid var(--border);
+}
+
+.patient-show-block--flush {
+  padding: 0;
+}
+
+.patient-show-block--flush .patient-show-muted {
+  margin-top: 0;
+}
+
+.patient-show-h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.patient-show-h2--padded {
+  margin-bottom: 0;
+  padding-bottom: 0.65rem;
+}
+
+.patient-show-h2--inline {
+  margin: 0;
+}
+
+.patient-show-visits-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.85rem;
+  margin-bottom: 0;
+}
+
+.appt-staff-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.appt-staff-legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+.appt-staff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.appt-staff-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.patient-show-muted {
+  margin: 0;
+}
+
+.patient-show-team {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.patient-show-role {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.patient-table--in-show tbody tr:hover {
+  background: #fafbfc;
+}
+
+.patient-table--in-show tbody tr {
+  cursor: default;
 }
 
 .name-meta {
@@ -484,7 +764,9 @@ table.patient-table {
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .pager-icon-btn:hover:not(:disabled) {
@@ -534,7 +816,9 @@ table.patient-table {
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .pager-num-btn:hover {
@@ -620,16 +904,34 @@ table.patient-table {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgb(15 23 42 / 48%);
-  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 20;
+  z-index: 10000;
+}
+
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(15 23 42 / 48%);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.modal-scrim:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .modal {
+  position: relative;
+  z-index: 1;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 1.5rem 1.5rem 1.25rem;

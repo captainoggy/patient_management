@@ -1,5 +1,7 @@
 import { apiFetch } from "./http";
 
+import type { Clinician } from "./clinicians";
+
 export type Patient = {
   id: number;
   first_name: string;
@@ -10,6 +12,17 @@ export type Patient = {
   appointment_count: number;
   created_at: string;
   updated_at: string;
+};
+
+export type PatientAppointment = {
+  id: number;
+  scheduled_at: string;
+  notes: string;
+  clinicians: Clinician[];
+};
+
+export type PatientDetail = Patient & {
+  appointments: PatientAppointment[];
 };
 
 export type PatientPayload = {
@@ -26,6 +39,11 @@ export type PaginatedPatients = {
   previous: string | null;
   results: Patient[];
 };
+
+export async function fetchPatientDetail(id: number, clinicId: number): Promise<PatientDetail> {
+  const q = new URLSearchParams({ clinic_id: String(clinicId) });
+  return apiFetch<PatientDetail>(`/v1/patients/${id}/?${q.toString()}`);
+}
 
 export async function listPatients(
   page = 1,

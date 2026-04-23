@@ -1,7 +1,8 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import type { PatientPayload } from "../../api/patients";
+import { ModalBackdrop } from "../ModalBackdrop";
 import { todayIsoDateLocal } from "../../utils/dateOfBirth";
 
 export type EditorState = { mode: "create" } | { mode: "edit"; patientId: number };
@@ -25,6 +26,7 @@ export function PatientFormModal({
   onClose,
   onSubmit,
 }: Props) {
+  const firstFieldRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!editor) return;
     const onKey = (e: KeyboardEvent) => {
@@ -33,6 +35,10 @@ export function PatientFormModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [editor, onClose]);
+  useEffect(() => {
+    if (!editor) return;
+    firstFieldRef.current?.focus();
+  }, [editor]);
 
   if (!editor) return null;
 
@@ -40,13 +46,12 @@ export function PatientFormModal({
   const dobMax = todayIsoDateLocal();
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <ModalBackdrop onDismiss={onClose}>
       <div
         className="modal stack"
         role="dialog"
         aria-labelledby="patient-modal-title"
         aria-modal="true"
-        onClick={(ev) => ev.stopPropagation()}
       >
         <div className="modal-header">
           <h2 id="patient-modal-title" className="modal-title">
@@ -70,10 +75,10 @@ export function PatientFormModal({
             <label className="field">
               First name
               <input
+                ref={firstFieldRef}
                 value={form.first_name}
                 onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
                 required
-                autoFocus
               />
             </label>
             <label className="field">
@@ -123,6 +128,6 @@ export function PatientFormModal({
           </div>
         </form>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }
