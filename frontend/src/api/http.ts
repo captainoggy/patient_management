@@ -13,7 +13,17 @@ export class ApiError extends Error {
   }
 }
 
+/** Set when the API is cross-origin; `document.cookie` on the SPA host cannot read API cookies. */
+let serverCsrfToken: string | null = null;
+
+export function setCsrfFromServer(token: string | null): void {
+  serverCsrfToken = token;
+}
+
 export function getCsrfToken(): string | null {
+  if (serverCsrfToken) {
+    return serverCsrfToken;
+  }
   const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
 }

@@ -9,7 +9,7 @@ Django + Django REST Framework API and a React (TypeScript) SPA. **Postgres** an
 | **Frontend (static SPA)** | [Vercel](https://vercel.com) — [https://patient-management-xb26.vercel.app](https://patient-management-xb26.vercel.app) *(use your Vercel **Domains** URL if it differs.)* |
 | **Backend (API + admin)** | [Render](https://render.com) — [https://patient-mgmt-api-o6ma.onrender.com](https://patient-mgmt-api-o6ma.onrender.com) |
 
-The browser only talks to the Vercel origin. **`frontend/api/[[...path]].js`** is a small serverless **proxy** to Render for `/api/*` (same-origin cookies/CSRF; external URL rewrites on Hobby are unreliable). In the Vercel project, set **Root Directory** to **`frontend`** (not the monorepo root) so `vercel.json` and the `api/` folder deploy together. Optionally set **`RENDER_API_ORIGIN`** to your Render base URL; it defaults in that file.
+The production **Vite** build uses **`VITE_API_ROOT`** (set in **`frontend/vercel.json`** for Vercel builds) to call the **Render API URL** directly from the browser. On **Render**, set **`DJANGO_CSRF_TRUSTED_ORIGINS`** and **`DJANGO_CORS_ALLOWED_ORIGINS`** to your Vercel app origin (e.g. `https://your-app.vercel.app`, comma-separated if several), and enable **`DJANGO_CROSS_SITE_COOKIES=true`** so session/CSRF cookies work across sites (see **`render.yaml`**). The first **`GET /api/v1/auth/session/`** returns a **`csrf`** field for the SPA because cross-origin pages cannot read the API’s `csrftoken` cookie from `document.cookie`.
 
 ## Run locally
 
@@ -56,7 +56,7 @@ Migrations run when the `api` container starts. To run them alone: `make migrate
 |------|------|
 | `docker-compose.yml` | Postgres, API, and static `web` (nginx on **8080**) |
 | `backend/` | Django project, DRF, models, tests |
-| `frontend/` | Vite + React, `vercel.json` + `api/` (Vercel serverless → Render) when Root = `frontend`, unit tests under `npm run test:ci` |
+| `frontend/` | Vite + React, `vercel.json` sets `VITE_API_ROOT` for production; unit tests under `npm run test:ci` |
 
 REST routes live under **`/api/v1/`** (e.g. `/api/v1/patients/`). See `backend/config/urls.py` and the `patients` / `appointments` / `clinicians` apps.
 

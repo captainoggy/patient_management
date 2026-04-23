@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiFetch, getCsrfToken } from "./http";
+import { apiFetch, getCsrfToken, setCsrfFromServer } from "./http";
 
 describe("getCsrfToken", () => {
   afterEach(() => {
     document.cookie = "";
+    setCsrfFromServer(null);
   });
 
   it("returns null when absent", () => {
@@ -14,6 +15,12 @@ describe("getCsrfToken", () => {
   it("decodes cookie value", () => {
     document.cookie = "csrftoken=ab%2Bc";
     expect(getCsrfToken()).toBe("ab+c");
+  });
+
+  it("prefers server-provided token over cookie", () => {
+    document.cookie = "csrftoken=fromcookie";
+    setCsrfFromServer("from-api");
+    expect(getCsrfToken()).toBe("from-api");
   });
 });
 

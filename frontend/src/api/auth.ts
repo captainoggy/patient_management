@@ -1,5 +1,5 @@
 import { apiUrl } from "./config";
-import { apiFetch, ApiError, getCsrfToken } from "./http";
+import { apiFetch, ApiError, getCsrfToken, setCsrfFromServer } from "./http";
 
 export type ClinicSummary = {
   id: number;
@@ -8,15 +8,17 @@ export type ClinicSummary = {
 };
 
 export type SessionResponse =
-  | { authenticated: true; clinic: ClinicSummary }
-  | { authenticated: false };
+  | { authenticated: true; clinic: ClinicSummary; csrf: string }
+  | { authenticated: false; csrf: string };
 
 export type LoginResponse = {
   clinic: ClinicSummary;
 };
 
 export async function fetchSession(): Promise<SessionResponse> {
-  return apiFetch<SessionResponse>("/v1/auth/session/");
+  const s = await apiFetch<SessionResponse>("/v1/auth/session/");
+  setCsrfFromServer(s.csrf);
+  return s;
 }
 
 export async function login(username: string, password: string): Promise<LoginResponse> {

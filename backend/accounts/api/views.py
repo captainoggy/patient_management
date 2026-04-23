@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, login, logout
+from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -21,9 +22,10 @@ def auth_session(request):
                         "name": profile.clinic.name,
                         "slug": profile.clinic.slug,
                     },
+                    "csrf": get_token(request),
                 }
             )
-    return Response({"authenticated": False})
+    return Response({"authenticated": False, "csrf": get_token(request)})
 
 
 @api_view(["POST"])

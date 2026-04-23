@@ -34,6 +34,7 @@ if _render_host and _render_host not in ALLOWED_HOSTS:
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]
 
 INSTALLED_APPS = [
+    "corsheaders",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -155,6 +157,11 @@ _raw_csrf_trusted = os.environ.get(
 )
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_csrf_trusted.split(",") if o.strip()]
 
+# Cross-origin SPA: comma-separated origins in DJANGO_CORS_ALLOWED_ORIGINS (e.g. https://….vercel.app).
+_cors_origins = os.environ.get("DJANGO_CORS_ALLOWED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(",") if o.strip()]
+CORS_ALLOW_CREDENTIALS = bool(CORS_ALLOWED_ORIGINS)
+
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
@@ -257,6 +264,10 @@ if os.environ.get("DJANGO_HTTPS_DEPLOYMENT", "").lower() in ("1", "true", "yes")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    if os.environ.get("DJANGO_CROSS_SITE_COOKIES", "").lower() in ("1", "true", "yes"):
+        # Cross-site credentialed fetches (e.g. Vercel → Render) need SameSite=None.
+        SESSION_COOKIE_SAMESITE = "None"
+        CSRF_COOKIE_SAMESITE = "None"
     if os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "1").lower() in ("1", "true", "yes"):
         SECURE_SSL_REDIRECT = True
     _hsts = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
