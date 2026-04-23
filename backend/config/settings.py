@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,12 +22,16 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 raw_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,api")
 ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
-# Render sets RENDER_EXTERNAL_HOSTNAME to the real *.onrender.com host (e.g. with a suffix if the base name
-# is taken). Allow it even when DJANGO_ALLOWED_HOSTS still lists a guessed hostname from a blueprint.
-if os.environ.get("RENDER", "").lower() in ("1", "true", "yes"):
-    _render_host = (os.environ.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
-    if _render_host and _render_host not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]
+# Render injects RENDER_EXTERNAL_HOSTNAME (and RENDER_EXTERNAL_URL) for the real *.onrender.com host, which
+# can differ from a guessed name in a blueprint. Append whenever present (do not require RENDER=true; some
+# container runs have been seen without that flag set).
+_render_host = (os.environ.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
+if not _render_host:
+    _ext_url = (os.environ.get("RENDER_EXTERNAL_URL") or "").strip()
+    if _ext_url:
+        _render_host = (urlparse(_ext_url).netloc or "").strip()
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]
 
 INSTALLED_APPS = [
     "jazzmin",
